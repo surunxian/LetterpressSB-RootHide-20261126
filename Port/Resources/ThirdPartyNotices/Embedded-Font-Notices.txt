@@ -1,0 +1,35 @@
+Original font files are unmodified. The following notices are copied from their embedded name tables.
+
+
+=== ChillBitmapSE_7px.ttf ===
+
+Copyright © 2020-2022 by warren2060. All rights reserved. 
+These fonts are free software.
+Unlimited permission is granted to use, copy, and distribute them, with or without modification, either commercially or noncommercially.
+THESE FONTS ARE PROVIDED "AS IS" WITHOUT WARRANTY.
+此字型是免費的。
+無論您是否進行對本字型進行商業或非商業性修改，均可無限制地使用，複製和分發它們。
+本字型的衍生品之授權必須與此字型相同，且不作任何擔保。
+
+These fonts are free software.
+Unlimited permission is granted to use, copy, and distribute them, with or without modification, either commercially or noncommercially.
+THESE FONTS ARE PROVIDED "AS IS" WITHOUT WARRANTY.
+
+
+=== LXGWWenKaiLite-Medium.ttf ===
+
+Copyright 2021-2025 LXGW (https://github.com/lxgw/LxgwWenKai-Lite)
+Copyright 2020 The Klee Project Authors (https://github.com/fontworks-fonts/Klee)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://scripts.sil.org/OFL
+
+https://scripts.sil.org/OFL
+
+
+=== ZhuqueFangsong-Regular.ttf ===
+
+Copyright 2023 JadeFoci
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL
+
+http://scripts.sil.org/OFL

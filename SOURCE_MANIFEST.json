@@ -1,0 +1,263 @@
+{
+  "upstream": "owngoal-dev/Letterpress",
+  "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
+  "status": "prepared source; no Apple build yet",
+  "files": [
+    {
+      "path": "Port/Sources/Hashable+Combines.swift",
+      "bytes": 249,
+      "sha256": "9b01fbd6780d11c995a53d55d5061c4b5e3cfb30b8f8bd0085d401321f50edc2"
+    },
+    {
+      "path": "Port/Sources/HudContentView.swift",
+      "bytes": 632,
+      "sha256": "da7ca09eb9ff01fff42a26e6087b66e7678957cfb585e46f93fac951d1e5b276"
+    },
+    {
+      "path": "Port/Sources/HudEventProxy.swift",
+      "bytes": 4865,
+      "sha256": "01db89cb962a668b5fd285af23c87674fd3c5bcb4f31ecd77fbad07a2736942a"
+    },
+    {
+      "path": "Port/Sources/HudFirefliesView.swift",
+      "bytes": 7011,
+      "sha256": "efa5684d0a20de4a5cb0e9a08f9ba495f932b38d6150c10374017e0d4fb79493"
+    },
+    {
+      "path": "Port/Sources/HudViewModel.swift",
+      "bytes": 11982,
+      "sha256": "f4097da8a2f66967d2867f175af334d28ea0af9119097ef4a6e335c10b42c5bf"
+    },
+    {
+      "path": "Port/Sources/LPSBEnvironment.h",
+      "bytes": 459,
+      "sha256": "58a12f073a6ba5fff7c4339b0101a7843289cdeb49a460c5bec3b82c78001b83"
+    },
+    {
+      "path": "Port/Sources/LPSBNotifyCenter.h",
+      "bytes": 238,
+      "sha256": "65e7cf885215069fd29f555df43d284526047a73913aa22f5d4a9565896d3f46"
+    },
+    {
+      "path": "Port/Sources/LPSBNotifyCenter.m",
+      "bytes": 582,
+      "sha256": "2796255e76700ffda31f89cd596aa2ca1d0adda03180c3190b40fb9e5a1062cf"
+    },
+    {
+      "path": "Port/Sources/LPSBOverlayHost.mm",
+      "bytes": 10713,
+      "sha256": "26a08f9a7a64c8880dae4c5098badc261cd02cb95190b88940619ba3eb671f0d"
+    },
+    {
+      "path": "Port/Sources/LetterpressPreferences.swift",
+      "bytes": 3313,
+      "sha256": "8e8df1e1fe74f0edb580ecc72c30b69c46402d5d572989d4ce7f034e6ffc1a69"
+    },
+    {
+      "path": "Port/Sources/LetterpressSB-Bridging-Header.h",
+      "bytes": 87,
+      "sha256": "96d4c4c2cc6c830ebd720ca00b651719ce7c55a2057e32bb5af0fcc3549e6678"
+    },
+    {
+      "path": "Port/Sources/StringTokenizer.swift",
+      "bytes": 2579,
+      "sha256": "4c7ebc5df7efdcc50f5ed4d8f27204197eb739f7f420fc0a916ea3c95caaacce"
+    },
+    {
+      "path": "Port/Sources/View+Modify.swift",
+      "bytes": 259,
+      "sha256": "85cf62b1111f64f56718b8013f3ebe46b9206fe8c341d1697bacbd40438d6713"
+    },
+    {
+      "path": "Port/Vendor/Media/LPSBMediaObserver.h",
+      "bytes": 871,
+      "sha256": "e50ef862534de25c19307c6af301614b53499f33f05b58575a84730e889cfa3d"
+    },
+    {
+      "path": "Port/Vendor/Media/LPSBMediaObserver.mm",
+      "bytes": 12458,
+      "sha256": "60a9f789b5520531509f02209fb17b232f3df768a928699e0e37e7995b928509"
+    },
+    {
+      "path": "Port/Vendor/Media/MediaRemote+Private.h",
+      "bytes": 7964,
+      "sha256": "83c8d3bf5741680d162661930a2b5131babe78fa1dfa3dce0f8074cc281b5767"
+    },
+    {
+      "path": "Port/Vendor/Media/NSData+XXHash.h",
+      "bytes": 264,
+      "sha256": "0108dd4aca803c8b423cb5492a8590d251b05d7da65fd90fd3c0c4e84379ed03"
+    },
+    {
+      "path": "Port/Vendor/Media/NSData+XXHash.m",
+      "bytes": 1297,
+      "sha256": "72a0f4cf6a758c038642c4e5652d3eb51c80278931123835356b833baaccdd68"
+    },
+    {
+      "path": "Port/Vendor/Media/xxhash.c",
+      "bytes": 51391,
+      "sha256": "d083eecf949f6fd11463c977d4ba4355ff6d68ce3ab0e5e810ec62ee64f9a070"
+    },
+    {
+      "path": "Port/Vendor/Media/xxhash.h",
+      "bytes": 7091,
+      "sha256": "984a54e5db5596e33255eaa87436c8b26a2d77015e25840aa6e3a2b12cda99bf"
+    },
+    {
+      "path": "Port/Vendor/PrivateFrameworks/MediaRemote.tbd",
+      "bytes": 384299,
+      "sha256": "434827e20864f56b9ae41c3ea4630dd2f868890174d529f7d02108ff82747b76"
+    },
+    {
+      "path": "Port/Vendor/PrivateFrameworks/Preferences.tbd",
+      "bytes": 102336,
+      "sha256": "9daceaff6cf94346594a12f9ef9c2ea23de15475b516f9e33c20871a018c098b"
+    },
+    {
+      "path": "Port/Preferences/Resources/Info.plist",
+      "bytes": 806,
+      "sha256": "c74beff34ef3d19e4e8fe7246989e4882e137c71980163eff09924f447c273b2"
+    },
+    {
+      "path": "Port/Preferences/Resources/Root.plist",
+      "bytes": 14274,
+      "sha256": "bc0b0a87118c7fd592cc595de8ce0c412e401ba5e17d2022c70c3baa4ae8d1f9"
+    },
+    {
+      "path": "Port/Preferences/Resources/preference-loader.plist",
+      "bytes": 470,
+      "sha256": "f7cdbeca67612f10741ad4c6e790a4e367c2a3e1b9c562d365882cc9c22f6c40"
+    },
+    {
+      "path": "Port/Preferences/Sources/LPSBRootListController.m",
+      "bytes": 581,
+      "sha256": "72463252b2fad8dfe4bceba59f195a53fe24c65d58dcffa593aa1fc432996651"
+    },
+    {
+      "path": "Port/Resources/ChillBitmapSE_7px.ttf",
+      "bytes": 78360,
+      "sha256": "4166376f4ae343e5cd9e626476b96213b942cd17978c6e81cb1714267c34fbd8"
+    },
+    {
+      "path": "Port/Resources/LXGWWenKaiLite-Medium.ttf",
+      "bytes": 11540708,
+      "sha256": "b57fad3360409b547b897ee9184c54d512d20f7470d4262792da2267824ba89b"
+    },
+    {
+      "path": "Port/Resources/Settings.plist",
+      "bytes": 1590,
+      "sha256": "ddde2df7a160f716e0891471db7990f720375b246ca6c5aea795e0591c5d93bf"
+    },
+    {
+      "path": "Port/Resources/ThirdPartyNotices/DominantColors-MIT.txt",
+      "bytes": 1071,
+      "sha256": "3c50cf31b8766e28a1851eecfde0e401d56ff46df1e4ff02d9d92f3b145d2cd2"
+    },
+    {
+      "path": "Port/Resources/ThirdPartyNotices/Embedded-Font-Notices.txt",
+      "bytes": 1465,
+      "sha256": "44555ee91dca602dc24fb595202226259e8726a6a7d86edeca9c9fa49f0b4c02"
+    },
+    {
+      "path": "Port/Resources/ThirdPartyNotices/Letterpress-MIT.txt",
+      "bytes": 1064,
+      "sha256": "70712ea4743ebe58034da5065ac9f8e64e67539d5b512eb14f1486cd709fb075"
+    },
+    {
+      "path": "Port/Resources/ThirdPartyNotices/SIL-Open-Font-License-1.1.txt",
+      "bytes": 4069,
+      "sha256": "f19c674290e5dc79f02e8efe16139ab56a06a7128876f5b1579ffd0db5bc897e"
+    },
+    {
+      "path": "Port/Resources/ThirdPartyNotices/Vortex-MIT.txt",
+      "bytes": 1069,
+      "sha256": "5ecac440fbe9e244840edb76b386403bfc0384f229383959c2a3423319bf0e5d"
+    },
+    {
+      "path": "Port/Resources/ThirdPartyNotices/xxHash-BSD-2-Clause.txt",
+      "bytes": 1574,
+      "sha256": "e1f7239d1f80bd1ab55743a9c674289426d8f9055bc8924b4601fa7a56124185"
+    },
+    {
+      "path": "Port/Resources/ZhuqueFangsong-Regular.ttf",
+      "bytes": 8773704,
+      "sha256": "25a140cea2a7fdd7cceff97f1b771cd6f1bd5e7a70864e004495ddf2e281db1e"
+    },
+    {
+      "path": "Port/Resources/en.lproj/Localizable.strings",
+      "bytes": 5633,
+      "sha256": "92e9a1e95c2fecf79c8dc21785286f9f0b936f43cd48e33cd479d0fea9d806a5"
+    },
+    {
+      "path": "Port/Resources/zh-Hans.lproj/Localizable.strings",
+      "bytes": 4826,
+      "sha256": "345c7d51ad29c4d77e1465cac94fea4ec53eceb8e838bc95a20426b0bba5f8fb"
+    },
+    {
+      "path": "Port/project.yml",
+      "bytes": 4227,
+      "sha256": "dc9cd652e73f4d70e961ed40449bb65338ae302cd644dcfc66d7e0f8a76c1fdb"
+    },
+    {
+      "path": "Port/control",
+      "bytes": 333,
+      "sha256": "abdd609e19add8eb6c202d7b4b5001ce922a11dec678aa8a6da1f4474fb85d40",
+      "note": "candidate metadata only; not built or device-tested"
+    },
+    {
+      "path": "Port/LICENSE",
+      "bytes": 1064,
+      "sha256": "70712ea4743ebe58034da5065ac9f8e64e67539d5b512eb14f1486cd709fb075"
+    },
+    {
+      "path": "Port/Build/build_macos.sh",
+      "bytes": 5245,
+      "sha256": "cf21b76201698601a41bb1fe25e333bc459801d84912a3939ec3216b7f0298fe"
+    },
+    {
+      "path": "Port/Build/package.py",
+      "bytes": 6906,
+      "sha256": "5357cd7d66b1f09573b99b791b6774187e56e2444dc0ce44fc33544ac091c4c8"
+    },
+    {
+      "path": "Port/Build/verify.py",
+      "bytes": 20383,
+      "sha256": "35f775ef7ceef8112c28a95e4351e7e18486caf33120f13a67c2e778ea0d0feb"
+    },
+    {
+      "path": "Port/Build/macho_codesign.py",
+      "bytes": 5197,
+      "sha256": "6b78734ba32d6134ea2ca5dcb58dffa57978b17c9c5b150ae5211118119a06cc"
+    },
+    {
+      "path": "Port/Build/preflight_apple.py",
+      "bytes": 5930,
+      "sha256": "7a8715618bda953c3b2598610dc9c0a44544054fcfe75486d3659c81feff41ea"
+    },
+    {
+      "path": "Port/Build/prepare_apple_vortex.py",
+      "bytes": 4389,
+      "sha256": "f6790799abd5e9e0bbea5ac4cb681e22042fe8bb1c2289effb26394bda7173d2"
+    },
+    {
+      "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",
+      "bytes": 1071,
+      "sha256": "3c50cf31b8766e28a1851eecfde0e401d56ff46df1e4ff02d9d92f3b145d2cd2"
+    },
+    {
+      "path": "THIRD_PARTY_LICENSES/Vortex-26e036c4f04efcc019c95d43bfeffeaefbef3c99.txt",
+      "bytes": 1069,
+      "sha256": "5ecac440fbe9e244840edb76b386403bfc0384f229383959c2a3423319bf0e5d"
+    },
+    {
+      "path": ".github/workflows/apple-build.yml",
+      "bytes": 3156,
+      "sha256": "bfc7d904a6eae443aaa64de3d236727437f584913882c430e00a665388764c2b"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2727,
+      "sha256": "08947d48be9964e6e4461eb8219f2a75eb42675b5c10d10f70b39fb380f76dd9"
+    }
+  ]
+}

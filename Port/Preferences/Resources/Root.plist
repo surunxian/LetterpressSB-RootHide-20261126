@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>title</key><string>Letterpress</string>
+  <key>defaults</key><string>wiki.qaq.letterpress</string>
+  <key>items</key><array>
+    <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>SpringBoard overlay</string></dict>
+    <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Enable HUD</string><key>key</key><string>isEnabled</string><key>default</key><true/><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Show while locked</string><key>key</key><string>shouldDisplayOnLockScreen</string><key>default</key><false/><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Show during screen recording</string><key>key</key><string>shouldDisplayWhenScreencast</string><key>default</key><true/><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Adaptive cover colors</string><key>key</key><string>isAdaptiveColorEnabled</string><key>default</key><false/><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Display subtitle</string><key>key</key><string>isLabelEnabled</string><key>default</key><false/><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Selected media apps</string><key>footerText</key><string>Enter bundle IDs separated by commas. Leave blank to hide the overlay for all apps.</string></dict>
+    <dict><key>cell</key><string>PSEditTextCell</string><key>label</key><string>Bundle IDs</string><key>key</key><string>selectedApplicationsCSV</string><key>default</key><string>com.tencent.QQMusic,com.netease.cloudmusic,com.kugou.kugou1002,com.kugou.kgyouth,com.soda.music,com.wenyu.bodian,com.yeelion.kwplayer,com.migu.migumobilemusic,com.fq.music</string><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Visual layout</string></dict>
+    <dict><key>cell</key><string>PSSliderCell</string><key>label</key><string>Width ratio</string><key>key</key><string>widthRatio</string><key>default</key><real>1.6</real><key>min</key><real>1.0</real><key>max</key><real>2.0</real><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSliderCell</string><key>label</key><string>Vertical offset</string><key>key</key><string>yOffset</string><key>default</key><real>0</real><key>min</key><real>-160</real><key>max</key><real>100</real><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSliderCell</string><key>label</key><string>Particle line offset</string><key>key</key><string>ySlide</string><key>default</key><real>-10</real><key>min</key><real>-32</real><key>max</key><real>32</real><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSliderCell</string><key>label</key><string>Font size</string><key>key</key><string>fontSize</string><key>default</key><real>20</real><key>min</key><real>8</real><key>max</key><real>44</real><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSliderCell</string><key>label</key><string>Opacity</string><key>key</key><string>opacity</string><key>default</key><real>1</real><key>min</key><real>0</real><key>max</key><real>1</real><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Particle behavior</string></dict>
+    <dict><key>cell</key><string>PSSliderCell</string><key>label</key><string>Birth rate</string><key>key</key><string>birthRate</string><key>default</key><real>100</real><key>min</key><real>0</real><key>max</key><real>200</real><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSliderCell</string><key>label</key><string>Particle lifespan</string><key>key</key><string>lifespan</string><key>default</key><real>3</real><key>min</key><real>1</real><key>max</key><real>10</real><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSliderCell</string><key>label</key><string>Speed</string><key>key</key><string>speed</string><key>default</key><real>0</real><key>min</key><real>0</real><key>max</key><real>1</real><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSliderCell</string><key>label</key><string>Speed variation</string><key>key</key><string>speedVariation</string><key>default</key><real>0.25</real><key>min</key><real>0.1</real><key>max</key><real>1</real><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSliderCell</string><key>label</key><string>Particle size</string><key>key</key><string>initialSize</string><key>default</key><real>0.2</real><key>min</key><real>0.01</real><key>max</key><real>1</real><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict><key>cell</key><string>PSSliderCell</string><key>label</key><string>Size at death</string><key>key</key><string>sizeMultiplier</string><key>default</key><real>5</real><key>min</key><real>1</real><key>max</key><real>100</real><key>defaults</key><string>wiki.qaq.letterpress</string><key>PostNotification</key><string>LetterpressNotificationNameNeedsReload</string></dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSGroupCell</string>
+    	<key>label</key>
+    	<string>Text and subtitle</string>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSLinkListCell</string>
+    	<key>label</key>
+    	<string>Font</string>
+    	<key>key</key>
+    	<string>fontType</string>
+    	<key>default</key>
+    	<string>pingFang</string>
+    	<key>defaults</key>
+    	<string>wiki.qaq.letterpress</string>
+    	<key>PostNotification</key>
+    	<string>LetterpressNotificationNameNeedsReload</string>
+    	<key>validTitles</key>
+    	<array>
+    		<string>PingFang</string>
+    		<string>Helvetica Neue</string>
+    		<string>Avenir Next</string>
+    		<string>Futura</string>
+    		<string>Georgia</string>
+    		<string>ZhuqueFangsong</string>
+    		<string>LXGWWenKai</string>
+    	</array>
+    	<key>validValues</key>
+    	<array>
+    		<string>pingFang</string>
+    		<string>helveticaNeue</string>
+    		<string>avenirNext</string>
+    		<string>futura</string>
+    		<string>georgia</string>
+    		<string>fangSong</string>
+    		<string>kaiTi</string>
+    	</array>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSLinkListCell</string>
+    	<key>label</key>
+    	<string>Tokenization</string>
+    	<key>key</key>
+    	<string>tokenizerMode</string>
+    	<key>default</key>
+    	<string>byCharacter</string>
+    	<key>defaults</key>
+    	<string>wiki.qaq.letterpress</string>
+    	<key>PostNotification</key>
+    	<string>LetterpressNotificationNameNeedsReload</string>
+    	<key>validTitles</key>
+    	<array>
+    		<string>By Character</string>
+    		<string>By Word</string>
+    	</array>
+    	<key>validValues</key>
+    	<array>
+    		<string>byCharacter</string>
+    		<string>byWord</string>
+    	</array>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSSliderCell</string>
+    	<key>label</key>
+    	<string>Subtitle font size</string>
+    	<key>key</key>
+    	<string>labelFontSize</string>
+    	<key>default</key>
+    	<real>20.0</real>
+    	<key>defaults</key>
+    	<string>wiki.qaq.letterpress</string>
+    	<key>PostNotification</key>
+    	<string>LetterpressNotificationNameNeedsReload</string>
+    	<key>min</key>
+    	<real>8.0</real>
+    	<key>max</key>
+    	<real>44.0</real>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSSliderCell</string>
+    	<key>label</key>
+    	<string>Subtitle vertical offset</string>
+    	<key>key</key>
+    	<string>yLabelOffset</string>
+    	<key>default</key>
+    	<real>0.0</real>
+    	<key>defaults</key>
+    	<string>wiki.qaq.letterpress</string>
+    	<key>PostNotification</key>
+    	<string>LetterpressNotificationNameNeedsReload</string>
+    	<key>min</key>
+    	<real>-72.0</real>
+    	<key>max</key>
+    	<real>72.0</real>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSGroupCell</string>
+    	<key>label</key>
+    	<string>Additional particle controls</string>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSSliderCell</string>
+    	<key>label</key>
+    	<string>Burst count</string>
+    	<key>key</key>
+    	<string>burstCount</string>
+    	<key>default</key>
+    	<real>0.0</real>
+    	<key>defaults</key>
+    	<string>wiki.qaq.letterpress</string>
+    	<key>PostNotification</key>
+    	<string>LetterpressNotificationNameNeedsReload</string>
+    	<key>min</key>
+    	<real>0.0</real>
+    	<key>max</key>
+    	<real>200.0</real>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSSliderCell</string>
+    	<key>label</key>
+    	<string>Burst count variation</string>
+    	<key>key</key>
+    	<string>burstCountVariation</string>
+    	<key>default</key>
+    	<real>0.0</real>
+    	<key>defaults</key>
+    	<string>wiki.qaq.letterpress</string>
+    	<key>PostNotification</key>
+    	<string>LetterpressNotificationNameNeedsReload</string>
+    	<key>min</key>
+    	<real>0.0</real>
+    	<key>max</key>
+    	<real>200.0</real>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSSliderCell</string>
+    	<key>label</key>
+    	<string>Attraction strength</string>
+    	<key>key</key>
+    	<string>attractionStrength</string>
+    	<key>default</key>
+    	<real>-1.6</real>
+    	<key>defaults</key>
+    	<string>wiki.qaq.letterpress</string>
+    	<key>PostNotification</key>
+    	<string>LetterpressNotificationNameNeedsReload</string>
+    	<key>min</key>
+    	<real>-3.0</real>
+    	<key>max</key>
+    	<real>-0.1</real>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSSliderCell</string>
+    	<key>label</key>
+    	<string>Damping factor</string>
+    	<key>key</key>
+    	<string>dampingFactor</string>
+    	<key>default</key>
+    	<real>1.0</real>
+    	<key>defaults</key>
+    	<string>wiki.qaq.letterpress</string>
+    	<key>PostNotification</key>
+    	<string>LetterpressNotificationNameNeedsReload</string>
+    	<key>min</key>
+    	<real>0.0</real>
+    	<key>max</key>
+    	<real>5.0</real>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSGroupCell</string>
+    	<key>label</key>
+    	<string>Custom colors</string>
+    	<key>footerText</key>
+    	<string>When adaptive cover colors are disabled, enter red,green,blue,alpha components from 0 to 1, separated by commas.</string>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSEditTextCell</string>
+    	<key>label</key>
+    	<string>Color 1 (RGBA)</string>
+    	<key>key</key>
+    	<string>color1</string>
+    	<key>default</key>
+    	<string>1.0,1.0,0.0,1.0</string>
+    	<key>defaults</key>
+    	<string>wiki.qaq.letterpress</string>
+    	<key>PostNotification</key>
+    	<string>LetterpressNotificationNameNeedsReload</string>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSEditTextCell</string>
+    	<key>label</key>
+    	<string>Color 2 (RGBA)</string>
+    	<key>key</key>
+    	<string>color2</string>
+    	<key>default</key>
+    	<string>1.0,0.0,0.0,1.0</string>
+    	<key>defaults</key>
+    	<string>wiki.qaq.letterpress</string>
+    	<key>PostNotification</key>
+    	<string>LetterpressNotificationNameNeedsReload</string>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSEditTextCell</string>
+    	<key>label</key>
+    	<string>Color 3 (RGBA)</string>
+    	<key>key</key>
+    	<string>color3</string>
+    	<key>default</key>
+    	<string>1.0,1.0,1.0,0.0</string>
+    	<key>defaults</key>
+    	<string>wiki.qaq.letterpress</string>
+    	<key>PostNotification</key>
+    	<string>LetterpressNotificationNameNeedsReload</string>
+    </dict>
+    <dict>
+    	<key>cell</key>
+    	<string>PSEditTextCell</string>
+    	<key>label</key>
+    	<string>Color 4 (RGBA)</string>
+    	<key>key</key>
+    	<string>color4</string>
+    	<key>default</key>
+    	<string>1.0,1.0,1.0,0.0</string>
+    	<key>defaults</key>
+    	<string>wiki.qaq.letterpress</string>
+    	<key>PostNotification</key>
+    	<string>LetterpressNotificationNameNeedsReload</string>
+    </dict>
+    <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>About</string><key>footerText</key><string>Based on Letterpress by Lessica (MIT). A SpringBoard-hosted port; RootHide support and device behavior require real-device validation.</string></dict>
+  </array>
+</dict></plist>

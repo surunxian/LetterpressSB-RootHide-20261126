@@ -1,0 +1,129 @@
+name: LetterpressSB
+options:
+  minimumXcodeGenVersion: 2.42.0
+  xcodeVersion: "16.2"
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: false
+configs:
+  Debug: debug
+  Release: release
+packages:
+  Vortex:
+    url: https://github.com/twostraws/Vortex.git
+    revision: 26e036c4f04efcc019c95d43bfeffeaefbef3c99
+  DominantColors:
+    url: https://github.com/DenDmitriev/DominantColors.git
+    revision: a05327d36092c47e9ddc77ce565eb35a5b4a4a6e
+settings:
+  base:
+    SDKROOT: iphoneos
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    ARCHS: "arm64 arm64e"
+    ONLY_ACTIVE_ARCH: NO
+    EXCLUDED_ARCHS: ""
+    CODE_SIGNING_ALLOWED: NO
+    CODE_SIGNING_REQUIRED: NO
+    CODE_SIGN_IDENTITY: ""
+    ENABLE_BITCODE: NO
+    CLANG_ENABLE_MODULES: YES
+    CLANG_ENABLE_OBJC_ARC: YES
+    CLANG_CXX_LANGUAGE_STANDARD: gnu++17
+    GCC_C_LANGUAGE_STANDARD: gnu11
+    SWIFT_VERSION: "5.0"
+    SWIFT_ENABLE_EXPLICIT_MODULES: NO
+targets:
+  LetterpressSB:
+    type: library.dynamic
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: Sources
+        includes: ["**/*.swift", "**/*.m", "**/*.mm", "**/*.c", "**/*.cc", "**/*.cpp", "**/*.h", "**/*.hpp"]
+      - path: Vendor
+        includes: ["**/*.swift", "**/*.m", "**/*.mm", "**/*.c", "**/*.cc", "**/*.cpp", "**/*.h", "**/*.hpp"]
+        excludes: ["PrivateFrameworks/**"]
+    settings:
+      base:
+        PRODUCT_NAME: LetterpressSB
+        PRODUCT_MODULE_NAME: LetterpressSB
+        EXECUTABLE_PREFIX: ""
+        EXECUTABLE_EXTENSION: dylib
+        MACH_O_TYPE: mh_dylib
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        DEFINES_MODULE: YES
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/Sources/LetterpressSB-Bridging-Header.h"
+        SWIFT_OBJC_INTERFACE_HEADER_NAME: LetterpressSB-Swift.h
+        SWIFT_INSTALL_OBJC_HEADER: YES
+        HEADER_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(SRCROOT)/Sources"
+          - "$(SRCROOT)/Vendor/**"
+        FRAMEWORK_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(SRCROOT)/Vendor/PrivateFrameworks"
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - '"$(SRCROOT)/Vendor/PrivateFrameworks/MediaRemote.tbd"'
+        LD_DYLIB_INSTALL_NAME: "@rpath/LetterpressSB.dylib"
+        LD_RUNPATH_SEARCH_PATHS: "/usr/lib/swift @loader_path"
+        DEAD_CODE_STRIPPING: YES
+        SWIFT_OPTIMIZATION_LEVEL: "-O"
+        SWIFT_COMPILATION_MODE: wholemodule
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+        STRIP_INSTALLED_PRODUCT: NO
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+    dependencies:
+      - package: Vortex
+        product: Vortex
+      - package: DominantColors
+        product: DominantColors
+      - sdk: UIKit.framework
+      - sdk: Foundation.framework
+      - sdk: SwiftUI.framework
+      - sdk: Combine.framework
+      - sdk: QuartzCore.framework
+      - sdk: CoreGraphics.framework
+      - sdk: CoreFoundation.framework
+      - sdk: CoreText.framework
+      - sdk: MediaPlayer.framework
+      - sdk: NaturalLanguage.framework
+  LetterpressSBPrefs:
+    type: bundle
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: Preferences/Sources
+      - path: Preferences/Resources/Root.plist
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_NAME: LetterpressSBPrefs
+        PRODUCT_BUNDLE_IDENTIFIER: dev.letterpress.springboard.preferences
+        EXECUTABLE_NAME: LetterpressSBPrefs
+        BUNDLE_EXECUTABLE: LetterpressSBPrefs
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: "$(SRCROOT)/Preferences/Resources/Info.plist"
+        CLANG_ENABLE_OBJC_ARC: YES
+        SKIP_INSTALL: YES
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/Preferences/Sources"
+        FRAMEWORK_SEARCH_PATHS: "$(SRCROOT)/Vendor/PrivateFrameworks"
+        OTHER_LDFLAGS:
+          - '"$(SRCROOT)/Vendor/PrivateFrameworks/Preferences.tbd"'
+        LD_RUNPATH_SEARCH_PATHS: "/usr/lib/swift @loader_path"
+    dependencies:
+      - sdk: Foundation.framework
+      - sdk: UIKit.framework
+schemes:
+  LetterpressSB:
+    build:
+      targets:
+        LetterpressSB: all
+        LetterpressSBPrefs: all
+    run:
+      config: Debug
+    archive:
+      config: Release

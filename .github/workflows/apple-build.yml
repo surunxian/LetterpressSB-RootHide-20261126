@@ -1,0 +1,78 @@
+name: Build LetterpressSB with Apple Xcode
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: letterpress-apple-build
+  cancel-in-progress: false
+
+jobs:
+  apple-build:
+    # Standard public-repository runner only. Never select a paid/larger runner.
+    runs-on: macos-15
+    timeout-minutes: 40
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.2.app/Contents/Developer
+      LETTERPRESSSB_BUILD_DIR: ${{ github.workspace }}/Port/Build/output
+    steps:
+      - name: Check out source without retaining credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Require public repository and pinned Apple toolchain
+        shell: bash
+        env:
+          REPOSITORY_VISIBILITY: ${{ github.event.repository.visibility }}
+        run: |
+          set -euo pipefail
+          [[ "$REPOSITORY_VISIBILITY" == public ]]
+          [[ "$RUNNER_OS" == macOS ]]
+          [[ -d "$DEVELOPER_DIR" ]]
+          /usr/bin/xcodebuild -version
+          [[ "$(/usr/bin/xcrun --sdk iphoneos --show-sdk-version)" == 18.2 ]]
+          mkdir -p Port/Build/output
+          /usr/bin/xcodebuild -version > Port/Build/output/toolchain.txt
+          /usr/bin/sw_vers >> Port/Build/output/toolchain.txt
+          /usr/bin/uname -m >> Port/Build/output/toolchain.txt
+          git rev-parse HEAD > Port/Build/output/source-commit.txt
+
+      - name: Install pinned XcodeGen without Homebrew drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --proto '=https' --tlsv1.2 \
+            https://github.com/yonaskolb/XcodeGen/releases/download/2.42.0/xcodegen.zip \
+            --output "$RUNNER_TEMP/xcodegen.zip"
+          echo 'a760b4bf97460341316a2c00d8c87b2946c6c2729eb57e9a72abb3ef7bc0ef82  '"$RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c -
+          ditto -x -k "$RUNNER_TEMP/xcodegen.zip" "$RUNNER_TEMP/xcodegen-2.42.0"
+          echo "$RUNNER_TEMP/xcodegen-2.42.0/xcodegen/bin" >> "$GITHUB_PATH"
+
+      - name: Build all native and Swift modules using Apple Xcode
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The build script requires a fresh output directory. Keep logs outside it.
+          mkdir -p Port/Build/ci-logs
+          mv Port/Build/output/toolchain.txt Port/Build/ci-logs/
+          mv Port/Build/output/source-commit.txt Port/Build/ci-logs/
+          rmdir Port/Build/output
+          bash Port/Build/build_macos.sh 2>&1 | tee Port/Build/ci-logs/apple-build.log
+
+      - name: Upload packages and diagnostic evidence, not intermediate objects
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: LetterpressSB-apple-${{ github.run_number }}
+          if-no-files-found: warn
+          retention-days: 3
+          path: |
+            Port/Build/output/packages/
+            Port/Build/output/macho-verification.json
+            Port/Build/output/apple-preflight/
+            Port/Build/output/derived/Build/Products/Release-iphoneos/*.dSYM/
+            Port/Build/ci-logs/
