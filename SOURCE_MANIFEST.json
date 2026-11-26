@@ -1,7 +1,7 @@
 {
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
-  "status": "Apple cloud build iteration; not device-tested",
+  "status": "Apple cloud test4 build iteration; not device-tested",
   "files": [
     {
       "path": "Port/Sources/Hashable+Combines.swift",
@@ -15,8 +15,8 @@
     },
     {
       "path": "Port/Sources/HudEventProxy.swift",
-      "bytes": 4865,
-      "sha256": "01db89cb962a668b5fd285af23c87674fd3c5bcb4f31ecd77fbad07a2736942a"
+      "bytes": 5741,
+      "sha256": "8f92af97563875d151fb66dffa0ce883feccc4a768ba35a421883b4aeb77c210"
     },
     {
       "path": "Port/Sources/HudFirefliesView.swift",
@@ -45,8 +45,8 @@
     },
     {
       "path": "Port/Sources/LPSBOverlayHost.mm",
-      "bytes": 10713,
-      "sha256": "26a08f9a7a64c8880dae4c5098badc261cd02cb95190b88940619ba3eb671f0d"
+      "bytes": 12793,
+      "sha256": "7f29f6dd7cfbc2fced16a139c691c8e428f49f941493150f4e3ee1ba799a6dcf"
     },
     {
       "path": "Port/Sources/LetterpressPreferences.swift",
@@ -120,8 +120,8 @@
     },
     {
       "path": "Port/Preferences/Resources/Root.plist",
-      "bytes": 14274,
-      "sha256": "bc0b0a87118c7fd592cc595de8ce0c412e401ba5e17d2022c70c3baa4ae8d1f9"
+      "bytes": 14385,
+      "sha256": "413e117c231a79eb51cf3e59f8c021375bfb0900ba3d0f580956e368eb9df84a"
     },
     {
       "path": "Port/Preferences/Resources/preference-loader.plist",
@@ -201,7 +201,7 @@
     {
       "path": "Port/control",
       "bytes": 333,
-      "sha256": "a1adbace2ca6f66aea94edacc746c1f66f1647003ae71832a8f524f23235b903",
+      "sha256": "38f0b5a1fb7f2d4fb32742da207e8494291c937f79fd812ebe1bc8b7fb4f09f1",
       "note": "candidate metadata only; not built or device-tested"
     },
     {

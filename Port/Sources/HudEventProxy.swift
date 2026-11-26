@@ -18,6 +18,7 @@ final class HudEventProxy {
     private var observers: [NSObjectProtocol] = []
     private var reloadToken: Int32 = -1
     private var colorGeneration = UUID()
+    private var isWindowRefreshPending = false
 
     private init() {
         media.isArtworkDecodingRequired = LetterpressPreferences.isAdaptiveColorEnabled
@@ -33,7 +34,7 @@ final class HudEventProxy {
             LetterpressPreferences.store.synchronize()
             self.media.isArtworkDecodingRequired = LetterpressPreferences.isAdaptiveColorEnabled
             self.updateVisibility()
-            LPSBOverlayHost.refreshVisibility()
+            self.requestWindowRefresh()
         }
         observers.append(center.addObserver(forName: UIScreen.capturedDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
             self?.updateVisibility()
@@ -52,6 +53,19 @@ final class HudEventProxy {
         nowPlayingApp.send(media.nowPlayingApp)
         nowPlayingSubtitle.send(media.nowPlayingSubtitle)
         updateVisibility()
+        requestWindowRefresh()
+    }
+
+    private func requestWindowRefresh() {
+        guard !isWindowRefreshPending else { return }
+        isWindowRefreshPending = true
+        // Never re-enter HudEventProxy.shared / HudViewModel.shared during init.
+        // Let all synchronous Combine and preference subscribers settle first.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.isWindowRefreshPending = false
+            LPSBOverlayHost.refreshVisibility()
+        }
     }
 
     private func artworkDidChange() {
@@ -85,6 +99,13 @@ final class HudViewController: UIHostingController<HudContentView> {
     init() { super.init(rootView: HudContentView()) }
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        // The TrollStore container cleared the hosting view as well as its window.
+        // This controller is the SpringBoard window's root, so preserve that here.
+        view.backgroundColor = .clear
+        view.isOpaque = false
+    }
     override var prefersStatusBarHidden: Bool { true }
     override var prefersHomeIndicatorAutoHidden: Bool { true }
 }

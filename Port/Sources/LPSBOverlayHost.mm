@@ -14,6 +14,9 @@ static int32_t gLockToken = -1;
 static LPSBPassThroughWindow *gWindow;
 static id gWindowHostingController;
 static unsigned int gWindowContextID;
+static BOOL gRefreshingVisibility = NO;
+static BOOL gStartingWindow = NO;
+static __weak UIScene *gDisconnectedScene;
 
 @implementation LPSBEnvironment
 + (BOOL)isLocked {
@@ -76,12 +79,23 @@ static unsigned int gWindowContextID;
 - (BOOL)_isWindowServerHostingManaged { return NO; }
 @end
 
-static UIWindowScene *LPActiveScene(void) {
+static UIWindowScene *LPOverlayScene(void) {
+    UIWindowScene *candidate = nil;
     for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
-        if ([scene isKindOfClass:UIWindowScene.class] && scene.activationState == UISceneActivationStateForegroundActive)
-            return (UIWindowScene *)scene;
+        if (![scene isKindOfClass:UIWindowScene.class] || scene == gDisconnectedScene) continue;
+        UIWindowScene *windowScene = (UIWindowScene *)scene;
+        if (windowScene.screen != UIScreen.mainScreen) continue;
+        UISceneActivationState state = scene.activationState;
+        if (state != UISceneActivationStateForegroundActive &&
+            state != UISceneActivationStateForegroundInactive && state != UISceneActivationStateBackground) continue;
+        // A SpringBoard system overlay must not track the foreground app's scene state.
+        // Keep a connected hosting scene stable; lock/blank/capture policy still gates visibility.
+        if (gWindow.windowScene == windowScene) return windowScene;
+        if (!candidate || state == UISceneActivationStateForegroundActive ||
+            (state == UISceneActivationStateForegroundInactive &&
+             candidate.activationState == UISceneActivationStateBackground)) candidate = windowScene;
     }
-    return nil;
+    return candidate;
 }
 
 static BOOL LPRegisterOverlayWindow(LPSBPassThroughWindow *window) {
@@ -134,8 +148,9 @@ static void LPUnregisterOverlayWindow(void) {
 }
 
 @implementation LPSBOverlayHost
-+ (void)initialize {
-    if (self != LPSBOverlayHost.class) return;
++ (void)installObservers {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
     notify_register_dispatch("com.apple.springboard.hasBlankedScreen", &gBlankToken, dispatch_get_main_queue(), ^(int token) {
         uint64_t state = 1;
         if (notify_get_state(token, &state) == NOTIFY_STATUS_OK) gBlanked = (state != 0);
@@ -157,31 +172,36 @@ static void LPUnregisterOverlayWindow(void) {
         name:UISceneWillDeactivateNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sceneChanged:)
         name:UISceneDidDisconnectNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sceneChanged:)
+        name:UISceneWillConnectNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sceneChanged:)
+        name:UISceneWillEnterForegroundNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sceneChanged:)
+        name:UISceneDidEnterBackgroundNotification object:nil];
+    });
 }
 + (void)sceneChanged:(NSNotification *)note {
-    if ([note.name isEqualToString:UISceneWillDeactivateNotification] && note.object == gWindow.windowScene) {
-        gWindow.hidden = YES;
-        return;
+    if (!NSThread.isMainThread) { dispatch_async(dispatch_get_main_queue(), ^{ [self sceneChanged:note]; }); return; }
+    if ([note.name isEqualToString:UISceneDidDisconnectNotification]) {
+        gDisconnectedScene = note.object;
+        if (note.object == gWindow.windowScene) LPUnregisterOverlayWindow();
+    } else if (note.object == gDisconnectedScene &&
+               ([note.name isEqualToString:UISceneWillConnectNotification] ||
+                [note.name isEqualToString:UISceneDidActivateNotification] ||
+                [note.name isEqualToString:UISceneWillEnterForegroundNotification])) {
+        gDisconnectedScene = nil;
     }
-    if ([note.name isEqualToString:UISceneDidDisconnectNotification] && note.object == gWindow.windowScene) {
-        LPUnregisterOverlayWindow();
-    }
-    UIWindowScene *scene = LPActiveScene();
-    if (gWindow && scene && gWindow.windowScene != scene) LPUnregisterOverlayWindow();
-    if (!gWindow && scene) {
-        Class plugin = NSClassFromString(@"LPSBPlugin");
-        SEL makeSelector = NSSelectorFromString(@"makeRootViewController");
-        UIViewController *root = [plugin respondsToSelector:makeSelector] ? ((id (*)(id, SEL))objc_msgSend)(plugin, makeSelector) : nil;
-        if (root) [self startWithRootViewController:root];
-    } else {
-        [self refreshVisibility];
-    }
+    // Deactivation is not a screen-lock signal in SpringBoard.
+    [self refreshVisibility];
 }
 + (void)startWithRootViewController:(UIViewController *)controller {
     if (!NSThread.isMainThread) { dispatch_async(dispatch_get_main_queue(), ^{ [self startWithRootViewController:controller]; }); return; }
-    if (gWindow || !controller) return;
-    UIWindowScene *scene = LPActiveScene();
+    [self installObservers];
+    if (gWindow || !controller || gStartingWindow) return;
+    UIWindowScene *scene = LPOverlayScene();
     if (!scene) return;
+    gStartingWindow = YES;
+    @try {
     LPSBPassThroughWindow *window = [[LPSBPassThroughWindow alloc] initWithWindowScene:scene];
     window.frame = scene.coordinateSpace.bounds;
     window.backgroundColor = UIColor.clearColor;
@@ -197,18 +217,28 @@ static void LPUnregisterOverlayWindow(void) {
         return;
     }
     window.hidden = YES; // Fail closed until lock/blank/capture policy is checked.
+    } @finally {
+        gStartingWindow = NO;
+    }
     [self refreshVisibility];
 }
 + (void)refreshVisibility {
     if (!NSThread.isMainThread) { dispatch_async(dispatch_get_main_queue(), ^{ [self refreshVisibility]; }); return; }
-    if (!gWindow) return;
-    UIWindowScene *scene = LPActiveScene();
-    if (!scene || gWindow.windowScene != scene) {
-        gWindow.hidden = YES;
-        return;
-    }
-    gWindow.frame = scene.coordinateSpace.bounds;
+    [self installObservers];
+    if (gRefreshingVisibility || gStartingWindow) return;
+    gRefreshingVisibility = YES;
+    @try {
+    UIWindowScene *scene = LPOverlayScene();
+    if (gWindow && (!scene || gWindow.windowScene != scene)) LPUnregisterOverlayWindow();
+    if (!scene) return;
     Class plugin = NSClassFromString(@"LPSBPlugin");
+    if (!gWindow) {
+        SEL makeSelector = NSSelectorFromString(@"makeRootViewController");
+        UIViewController *root = [plugin respondsToSelector:makeSelector] ? ((id (*)(id, SEL))objc_msgSend)(plugin, makeSelector) : nil;
+        if (root) [self startWithRootViewController:root];
+    }
+    if (!gWindow) return;
+    gWindow.frame = scene.coordinateSpace.bounds;
     SEL refreshSelector = NSSelectorFromString(@"refresh");
     SEL visibleSelector = NSSelectorFromString(@"shouldShowOverlay");
     if (!plugin || ![plugin respondsToSelector:refreshSelector] || ![plugin respondsToSelector:visibleSelector]) {
@@ -218,16 +248,24 @@ static void LPUnregisterOverlayWindow(void) {
     ((void (*)(id, SEL))objc_msgSend)(plugin, refreshSelector);
     BOOL visible = ((BOOL (*)(id, SEL))objc_msgSend)(plugin, visibleSelector);
     gWindow.hidden = !visible;
+    } @finally {
+        gRefreshingVisibility = NO;
+    }
 }
 @end
 
+static void LPSBBootstrap(NSUInteger attemptsRemaining) {
+    if (![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"com.apple.springboard"]) return;
+    // Register observers before asking Swift for a root, even if Swift/scenes are not ready.
+    [LPSBOverlayHost refreshVisibility];
+    if (gWindow || attemptsRemaining <= 1) return;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        LPSBBootstrap(attemptsRemaining - 1);
+    });
+}
+
 __attribute__((constructor)) static void LPSBConstructor(void) {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        NSString *bundleID = NSBundle.mainBundle.bundleIdentifier;
-        if (![bundleID isEqualToString:@"com.apple.springboard"]) return;
-        Class plugin = NSClassFromString(@"LPSBPlugin");
-        SEL makeSelector = NSSelectorFromString(@"makeRootViewController");
-        UIViewController *root = plugin ? ((id (*)(id, SEL))objc_msgSend)(plugin, makeSelector) : nil;
-        if (root) [LPSBOverlayHost startWithRootViewController:root];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        LPSBBootstrap(30); // Bounded launch retries; later events can also recreate the window.
     });
 }
