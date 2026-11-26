@@ -2,7 +2,7 @@
 #import <UIKit/UIKit.h>
 #import <notify.h>
 #import <dlfcn.h>
-#import <math.h>
+#import <stdlib.h>
 #import <string.h>
 
 // Settings supplies Preferences.framework. No AltList or extra linked framework.
@@ -266,48 +266,81 @@ static NSArray<NSString *> *LPDefaultColorStrings(void) {
     return @[@"1.0,1.0,0.0,1.0", @"1.0,0.0,0.0,1.0",
              @"1.0,1.0,1.0,0.0", @"1.0,1.0,1.0,0.0"];
 }
-static UIColor *LPColorFromRGBA(NSString *rgba, UIColor *fallback) {
-    if (![rgba isKindOfClass:NSString.class]) return fallback;
-    NSArray *parts = [rgba componentsSeparatedByString:@","];
-    if (parts.count != 4) return fallback;
+static UIColor *LPColorFromRGBA(NSString *rgba) {
+    if (![rgba isKindOfClass:NSString.class]) return UIColor.clearColor;
+    // Match split + compactMap(Double.init): require four parsed values,
+    // without imposing a finite-value check or a 0...1 storage restriction.
     double values[4];
-    for (NSUInteger index = 0; index < 4; index++) {
-        NSScanner *scanner = [NSScanner scannerWithString:parts[index]];
-        if (![scanner scanDouble:&values[index]] || !scanner.isAtEnd ||
-            !isfinite(values[index]) || values[index] < 0 || values[index] > 1) return fallback;
+    NSUInteger count = 0;
+    for (NSString *part in [rgba componentsSeparatedByString:@","]) {
+        if (!part.length || [part rangeOfCharacterFromSet:NSCharacterSet.whitespaceAndNewlineCharacterSet].location != NSNotFound) continue;
+        const char *start = part.UTF8String;
+        char *end = NULL;
+        double value = strtod(start, &end);
+        if (end == start || *end != '\0') continue;
+        if (count == 4) return UIColor.clearColor;
+        values[count++] = value;
     }
+    if (count != 4) return UIColor.clearColor;
     return [UIColor colorWithRed:values[0] green:values[1] blue:values[2] alpha:values[3]];
 }
 static NSString *LPRGBAFromColor(UIColor *color) {
-    CGFloat red = 0, green = 0, blue = 0, alpha = 0, white = 0;
-    if (![color getRed:&red green:&green blue:&blue alpha:&alpha]) {
-        if (![color getWhite:&white alpha:&alpha]) return nil;
-        red = green = blue = white;
+    CGColorRef cgColor = color.CGColor;
+    const CGFloat *components = cgColor ? CGColorGetComponents(cgColor) : NULL;
+    size_t count = cgColor ? CGColorGetNumberOfComponents(cgColor) : 0;
+    if (components && count == 2) {
+        return [NSString stringWithFormat:@"%.17g,%.17g,%.17g,%.17g",
+                (double)components[0], (double)components[0], (double)components[0], (double)components[1]];
     }
-    if (!isfinite(red) || !isfinite(green) || !isfinite(blue) || !isfinite(alpha)) return nil;
-    return [NSString stringWithFormat:@"%.17g,%.17g,%.17g,%.17g",
-            (double)fmin(1, fmax(0, red)), (double)fmin(1, fmax(0, green)),
-            (double)fmin(1, fmax(0, blue)), (double)fmin(1, fmax(0, alpha))];
+    if (components && count == 4) {
+        return [NSString stringWithFormat:@"%.17g,%.17g,%.17g,%.17g",
+                (double)components[0], (double)components[1], (double)components[2], (double)components[3]];
+    }
+    return @"0,0,0,0";
 }
 
 @interface LPSBColorsController : LPSBNativeOptionsController <UIColorPickerViewControllerDelegate>
 @property (nonatomic) NSInteger lpColorIndex;
 @property (nonatomic, weak) UIColorPickerViewController *lpActivePicker;
+@property (nonatomic, strong) NSMutableArray<UIColor *> *lpDraftColors;
 @end
 @implementation LPSBColorsController
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = @"颜色";
     self.lpColorIndex = NSNotFound;
+    self.lpDraftColors = [NSMutableArray arrayWithCapacity:4];
+    for (NSUInteger index = 0; index < 4; index++) {
+        NSString *key = [NSString stringWithFormat:@"color%lu", (unsigned long)index + 1];
+        id value = [self.lpDefaults objectForKey:key];
+        [self.lpDraftColors addObject:LPColorFromRGBA(value ?: LPDefaultColorStrings()[index])];
+    }
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc]
+        initWithTitle:@"应用" style:UIBarButtonItemStyleDone target:self action:@selector(lpApplyColors)];
+}
+- (void)lpCommitColors {
+    for (NSUInteger index = 0; index < self.lpDraftColors.count; index++) {
+        [self.lpDefaults setObject:LPRGBAFromColor(self.lpDraftColors[index])
+                           forKey:[NSString stringWithFormat:@"color%lu", (unsigned long)index + 1]];
+    }
+    LPNativeNotify(self.lpDefaults);
+}
+- (void)lpApplyColors {
+    [self lpCommitColors];
+    UINotificationFeedbackGenerator *feedback = [[UINotificationFeedbackGenerator alloc] init];
+    [feedback notificationOccurred:UINotificationFeedbackTypeSuccess];
+}
+- (void)viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    // Presenting the picker or reset alert is not leaving the colors page.
+    // A cancelled interactive pop also must not submit the draft.
+    if (!self.presentedViewController) [self lpCommitColors];
 }
 - (NSString *)lpStoredColorAtIndex:(NSUInteger)index {
-    NSString *key = [NSString stringWithFormat:@"color%lu", (unsigned long)index + 1];
-    id value = [self.lpDefaults objectForKey:key];
-    return [value isKindOfClass:NSString.class] ? value : LPDefaultColorStrings()[index];
+    return LPRGBAFromColor(self.lpDraftColors[index]);
 }
 - (UIColor *)lpColorAtIndex:(NSUInteger)index {
-    UIColor *fallback = LPColorFromRGBA(LPDefaultColorStrings()[index], UIColor.clearColor);
-    return LPColorFromRGBA([self lpStoredColorAtIndex:index], fallback);
+    return self.lpDraftColors[index];
 }
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { (void)tableView; return 2; }
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -318,7 +351,7 @@ static NSString *LPRGBAFromColor(UIColor *color) {
 }
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
     (void)tableView;
-    return section == 0 ? @"支持透明度，选择后立即应用。关闭自适应颜色后使用这些自定义颜色。" :
+    return section == 0 ? @"支持透明度，点击应用或离开颜色页时保存。关闭自适应颜色后使用这些自定义颜色。" :
         @"重置颜色将恢复为白色、透明、透明、透明（与原版“重置颜色”一致）。";
 }
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -354,24 +387,19 @@ static NSString *LPRGBAFromColor(UIColor *color) {
     self.lpActivePicker = picker;
     [self presentViewController:picker animated:YES completion:nil];
 }
-- (void)lpSaveColor:(UIColor *)color picker:(UIColorPickerViewController *)picker {
+- (void)lpUpdateDraftColor:(UIColor *)color picker:(UIColorPickerViewController *)picker {
     if (picker != self.lpActivePicker || self.lpColorIndex < 0 || self.lpColorIndex >= 4) return;
-    NSString *rgba = LPRGBAFromColor(color);
-    if (!rgba) return;
-    NSString *key = [NSString stringWithFormat:@"color%ld", (long)self.lpColorIndex + 1];
-    if ([[self.lpDefaults objectForKey:key] isEqual:rgba]) return;
-    [self.lpDefaults setObject:rgba forKey:key];
-    LPNativeNotify(self.lpDefaults);
+    self.lpDraftColors[(NSUInteger)self.lpColorIndex] = color;
     [self.lpTable reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:self.lpColorIndex inSection:0]]
                        withRowAnimation:UITableViewRowAnimationNone];
 }
 - (void)colorPickerViewController:(UIColorPickerViewController *)viewController
                  didSelectColor:(UIColor *)color continuously:(BOOL)continuously {
     (void)continuously;
-    [self lpSaveColor:color picker:viewController];
+    [self lpUpdateDraftColor:color picker:viewController];
 }
 - (void)colorPickerViewControllerDidFinish:(UIColorPickerViewController *)viewController {
-    [self lpSaveColor:viewController.selectedColor picker:viewController];
+    [self lpUpdateDraftColor:viewController.selectedColor picker:viewController];
     self.lpActivePicker = nil;
     self.lpColorIndex = NSNotFound;
 }
@@ -384,11 +412,7 @@ static NSString *LPRGBAFromColor(UIColor *color) {
         (void)action;
         typeof(self) self = weakSelf;
         if (!self) return;
-        NSArray *reset = @[@"1.0,1.0,1.0,1.0", @"0.0,0.0,0.0,0.0", @"0.0,0.0,0.0,0.0", @"0.0,0.0,0.0,0.0"];
-        for (NSUInteger index = 0; index < 4; index++) {
-            [self.lpDefaults setObject:reset[index] forKey:[NSString stringWithFormat:@"color%lu", (unsigned long)index + 1]];
-        }
-        LPNativeNotify(self.lpDefaults);
+        self.lpDraftColors = [@[UIColor.whiteColor, UIColor.clearColor, UIColor.clearColor, UIColor.clearColor] mutableCopy];
         [self.lpTable reloadData];
     }]];
     [self presentViewController:alert animated:YES completion:nil];

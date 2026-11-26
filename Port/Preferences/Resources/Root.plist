@@ -48,7 +48,7 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>label</key>
-			<string>在屏幕录制中启用</string>
+			<string>在截屏中启用</string>
 			<key>key</key>
 			<string>shouldDisplayWhenScreencast</string>
 			<key>default</key>
@@ -640,7 +640,7 @@
 			<string>起始尺寸倍率</string>
 			<key>footerText</key>
 			<string>调整粒子刚产生时相对于基础字号的尺寸倍率。
-范围：0.01x ～ 1.0x；默认：0.2x。标题沿用原版的一位小数显示。</string>
+范围：0.01x ～ 1.0x；默认：0.2x。</string>
 			<key>lpSliderKey</key>
 			<string>initialSize</string>
 			<key>lpValueFormat</key>

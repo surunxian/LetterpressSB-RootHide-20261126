@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Adapt only a verified Vortex checkout's package/resources for a SpringBoard dylib."""
 import argparse,hashlib,json,pathlib,plistlib,shutil,subprocess
-from adapt_vortex_lifecycle import adapt as adapt_lifecycle
 REV='26e036c4f04efcc019c95d43bfeffeaefbef3c99'
 PNG={'circle':'66f338f38c5fd786c72ed0906cf3a5bb29b170f1e5f02b8a92a964409a7929e1','confetti':'d1b3ae95ae78a0b7e65dd860a75e75436f623334a52b8c9641c31b223a9bdf72','sparkle':'b6e23edd5647fd3557826c30f8bc569f0c235766cfb785d58e899eb3bc3c1817'}
 ADAPTER='''// LetterpressSB packaging adapter. The upstream renderer is unchanged.
@@ -55,9 +54,13 @@ if not a.stage_only:
  oldspec='    url: https://github.com/twostraws/Vortex.git\n    revision: '+REV
  require(original_spec.count(oldspec)==1,'Unexpected Vortex package pin in project spec')
  spec.write_text(original_spec.replace(oldspec,'    path: '+json.dumps(str(local))))
- lifecycle=adapt_lifecycle(local)
- evidence={'upstream_revision':REV,'manifest_original_sha256':hashlib.sha256(original.encode()).hexdigest(),'manifest_adapted_sha256':digest(manifest),'adapter_sha256':hashlib.sha256(ADAPTER.encode()).hexdigest(),'renderer_files_changed':True,'lifecycle':lifecycle}
+ # Audit only: verify every original Swift source survived byte-for-byte.
+ source_hashes={str(f.relative_to(source)):digest(f) for f in sorted((source/'Sources').rglob('*.swift'))}
+ local_hashes={name:digest(local/name) for name in source_hashes}
+ require(source_hashes==local_hashes,'Upstream Swift source changed during resource adaptation')
+ evidence={'upstream_revision':REV,'manifest_original_sha256':hashlib.sha256(original.encode()).hexdigest(),'manifest_adapted_sha256':digest(manifest),'adapter_sha256':hashlib.sha256(ADAPTER.encode()).hexdigest(),'renderer_files_changed':False,'original_swift_sha256':local_hashes}
  (local/'LETTERPRESS_RESOURCE_ADAPTER.json').write_text(json.dumps(evidence,indent=2)+'\n')
+ print(json.dumps(evidence,sort_keys=True))
 if a.products:
  bundle=a.products/'Vortex_Vortex.bundle';bundle.mkdir(parents=True,exist_ok=True)
  for name,expected in PNG.items():
@@ -66,4 +69,4 @@ if a.products:
   shutil.copy2(f,bundle/(name+'.png'))
  (bundle/'Info.plist').write_bytes(plistlib.dumps({'CFBundleIdentifier':'dev.letterpress.springboard.vortex-resources','CFBundleName':'Vortex_Vortex','CFBundlePackageType':'BNDL','CFBundleVersion':'1','CFBundleDevelopmentRegion':'en'}))
  print(json.dumps({'bundle':str(bundle),'original_png_sha256':PNG,'device_tested':False},indent=2))
-else:print(json.dumps({'prepared_package':str(local),'revision':REV,'lifecycle':lifecycle,'device_tested':False},indent=2))
+else:print(json.dumps({'prepared_package':str(local),'revision':REV,'device_tested':False},indent=2))

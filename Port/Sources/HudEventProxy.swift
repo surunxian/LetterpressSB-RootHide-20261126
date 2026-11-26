@@ -2,7 +2,6 @@ import Combine
 import DominantColors
 import SwiftUI
 import UIKit
-import Vortex
 
 /// SpringBoard-safe replacement for the TrollStore HUD's app-delegate proxy.
 final class HudEventProxy {
@@ -18,7 +17,7 @@ final class HudEventProxy {
     private let media = LPSBMediaObserver()
     private var observers: [NSObjectProtocol] = []
     private var reloadToken: Int32 = -1
-    private var colorGeneration = UUID()
+    weak var rootViewController: LPSBRootViewController?
     private var isWindowRefreshPending = false
     // The vendor getters/setter use dispatch_sync on the media queue. Never wait
     // for that queue in SpringBoard's main-thread lock/wake notification path.
@@ -46,24 +45,17 @@ final class HudEventProxy {
             self.isEnabled = LetterpressPreferences.isEnabled
             self.displayOnLockScreen = LetterpressPreferences.shouldDisplayOnLockScreen
             self.displayWhenScreencast = LetterpressPreferences.shouldDisplayWhenScreencast
+            self.rootViewController?.setScreenshotInvisible(!self.displayWhenScreencast)
             let adaptive = LetterpressPreferences.isAdaptiveColorEnabled
-            if self.adaptiveColorEnabled != adaptive {
-                self.adaptiveColorEnabled = adaptive
-                self.setArtworkDecodingRequired(adaptive)
-            }
+            self.adaptiveColorEnabled = adaptive
+            self.setArtworkDecodingRequired(adaptive)
             if !adaptive {
-                // Invalidate before clearing, including a reload while already off.
-                self.colorGeneration = UUID()
-                if self.nowPlayingArtworkColors.value != nil { self.nowPlayingArtworkColors.send(nil) }
+                self.nowPlayingArtworkColors.send(nil)
             }
             self.updateVisibility()
             self.requestWindowRefresh()
         }
-        // Capture changes are already observed by LPSBOverlayHost before this
-        // singleton is created. Keep one policy evaluation per capture event.
-        observers.append(center.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: .main) { _ in
-            LPSBOverlayHost.refreshVisibility()
-        })
+        // Orientation/lock/blank inputs are owned by LPSBOverlayHost.
         mediaDidChange()
         updateVisibility()
     }
@@ -85,9 +77,9 @@ final class HudEventProxy {
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 self.isMediaReadPending = false
-                if self.isNowPlaying.value != playing { self.isNowPlaying.send(playing) }
-                if self.nowPlayingApp.value != app { self.nowPlayingApp.send(app) }
-                if self.nowPlayingSubtitle.value != subtitle { self.nowPlayingSubtitle.send(subtitle) }
+                self.isNowPlaying.send(playing)
+                self.nowPlayingApp.send(app)
+                self.nowPlayingSubtitle.send(subtitle)
                 self.requestWindowRefresh()
                 if self.mediaReadRequested {
                     self.mediaReadRequested = false
@@ -110,19 +102,21 @@ final class HudEventProxy {
     }
 
     private func artworkDidChange() {
-        colorGeneration = UUID()
-        let generation = colorGeneration
-        guard adaptiveColorEnabled, let image = media.nowPlayingArtwork else {
-            nowPlayingArtworkColors.send(nil)
-            return
-        }
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            let colors = (try? image.dominantColors(max: 4))?.map(Color.init)
-            DispatchQueue.main.async {
-                guard let self, self.colorGeneration == generation,
-                      self.adaptiveColorEnabled else { return }
-                self.nowPlayingArtworkColors.send(colors.map { $0 + [.clear.opacity(0)] })
+        if let artworkImage = media.nowPlayingArtwork {
+            DispatchQueue.global(qos: .userInitiated).async {
+#if DEBUG
+                print("Decoding artwork image")
+#endif
+                guard let dominantColors = try? artworkImage.dominantColors(max: 4) else {
+                    return
+                }
+                let convertedColors = dominantColors.map { Color($0) }
+                DispatchQueue.main.async { [weak self] in
+                    self?.nowPlayingArtworkColors.send(convertedColors + [.clear.opacity(0)])
+                }
             }
+        } else {
+            nowPlayingArtworkColors.send(nil)
         }
     }
 
@@ -133,52 +127,29 @@ final class HudEventProxy {
             return
         }
         let locked = LPSBEnvironment.isLocked()
-        let allowedByLock = !locked || displayOnLockScreen
-        let allowedByCapture = !LPSBEnvironment.isScreenCaptured() || displayWhenScreencast
+        let allowedByLock = displayOnLockScreen || (!locked && !LPSBEnvironment.isKeychainLocked())
+        // Upstream's screencast switch configures its secure-text container;
+        // it does not substitute UIScreen.isCaptured for HUD root visibility.
         let visible = isEnabled && LPSBEnvironment.isLockStateKnown() && allowedByLock &&
-            !LPSBEnvironment.isLandscape() && allowedByCapture
+            !LPSBEnvironment.isLandscape()
         if isHudVisible.value != visible { isHudVisible.send(visible) }
     }
-}
-
-// Keep the original visual views and their state alive, but never run a hidden
-// Canvas timeline. Visibility remains governed by the unchanged native policy.
-private struct LPSBRootView: View {
-    @ObservedObject private var vm = HudViewModel.shared
-    @State private var isPolicyVisible = false
-
-    var body: some View {
-        HudContentView()
-            .environment(\.lpsbVortexRenderingPaused, !isPolicyVisible || !vm.isActivated)
-            .onReceive(HudEventProxy.shared.isHudVisible.removeDuplicates()) { visible in
-                isPolicyVisible = visible
-            }
-    }
-}
-
-private final class HudViewController: UIHostingController<LPSBRootView> {
-    init() { super.init(rootView: LPSBRootView()) }
-    @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // The TrollStore container cleared the hosting view as well as its window.
-        // This controller is the SpringBoard window's root, so preserve that here.
-        view.backgroundColor = .clear
-        view.isOpaque = false
-    }
-    override var prefersStatusBarHidden: Bool { true }
-    override var prefersHomeIndicatorAutoHidden: Bool { true }
 }
 
 @objc(LPSBPlugin)
 final class LPSBPlugin: NSObject {
     @objc static func makeRootViewController() -> UIViewController? {
         guard Bundle.main.bundleIdentifier == "com.apple.springboard" else { return nil }
+        // The original controllers use this UIKit selector. Fail closed rather
+        // than invoking an unavailable private API inside SpringBoard.
+        guard UIViewController.instancesRespond(to: NSSelectorFromString("_setSecurityModeForViewsLayer")) else { return nil }
         _ = LetterpressResources.shared
         _ = HudEventProxy.shared // Construct the event source before HudViewModel.shared.
         _ = HudViewModel.shared
-        return HudViewController()
+        let root = LPSBRootViewController()
+        HudEventProxy.shared.rootViewController = root
+        root.setScreenshotInvisible(!LetterpressPreferences.shouldDisplayWhenScreencast)
+        return root
     }
 
     @objc static func refresh() {
@@ -186,6 +157,6 @@ final class LPSBPlugin: NSObject {
     }
 
     @objc static func shouldShowOverlay() -> Bool {
-        HudEventProxy.shared.isHudVisible.value && HudViewModel.shared.isActivated
+        HudEventProxy.shared.isHudVisible.value
     }
 }

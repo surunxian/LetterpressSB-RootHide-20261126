@@ -25,7 +25,16 @@ __attribute__((constructor)) static void LPSBMigrateLegacyPreferences(void) {
             @"burstCountVariation", @"attractionStrength", @"dampingFactor",
             @"color1", @"color2", @"color3", @"color4"
         ];
+        // Array and CSV encode one option. Any explicit new-domain value,
+        // including [] or @"", prevents either legacy representation migrating.
+        CFPropertyListRef selectedArray = CFPreferencesCopyAppValue(CFSTR("selectedApplications"), destination);
+        CFPropertyListRef selectedCSV = CFPreferencesCopyAppValue(CFSTR("selectedApplicationsCSV"), destination);
+        BOOL hasApplicationSelection = selectedArray != NULL || selectedCSV != NULL;
+        if (selectedArray) CFRelease(selectedArray);
+        if (selectedCSV) CFRelease(selectedCSV);
         for (NSString *key in keys) {
+            if (hasApplicationSelection &&
+                ([key isEqualToString:@"selectedApplications"] || [key isEqualToString:@"selectedApplicationsCSV"])) continue;
             CFStringRef name = (__bridge CFStringRef)key;
             CFPropertyListRef existing = CFPreferencesCopyAppValue(name, destination);
             if (existing) { CFRelease(existing); continue; }

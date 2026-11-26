@@ -17,6 +17,66 @@ static unsigned int gWindowContextID;
 static BOOL gRefreshingVisibility = NO;
 static BOOL gStartingWindow = NO;
 static __weak UIScene *gDisconnectedScene;
+static BOOL gKeychainLocked = YES;
+static int32_t gKeychainToken = -1;
+static int (*gGetDeviceLockState)(CFDictionaryRef);
+static id gOrientationObserver;
+static UIInterfaceOrientation gWindowOrientation = UIInterfaceOrientationUnknown;
+
+// The original HUD reads MobileKeyBag only at startup and lock-status events.
+// Resolve its existing API here without linking the injected dylib to a new
+// private-framework install name. Missing state is fail-closed, not unlocked.
+static void LPRefreshKeychainLockState(void) {
+    if (!gGetDeviceLockState) { gKeychainLocked = YES; return; }
+    int state = gGetDeviceLockState(NULL);
+    gKeychainLocked = state < 0 || state == 1 || state == 2;
+}
+
+static void LPInstallOriginalPolicyInputs(void) {
+    void *keybag = dlopen("/System/Library/PrivateFrameworks/MobileKeyBag.framework/MobileKeyBag", RTLD_LAZY | RTLD_LOCAL);
+    void *symbols = keybag ? keybag : RTLD_DEFAULT;
+    gGetDeviceLockState = (int (*)(CFDictionaryRef))dlsym(symbols, "MKBGetDeviceLockState");
+    CFStringRef *notification = (CFStringRef *)dlsym(symbols, "kMobileKeyBagLockStatusNotification");
+    if (gGetDeviceLockState && notification && *notification) {
+        uint32_t status = notify_register_dispatch([(__bridge NSString *)*notification UTF8String], &gKeychainToken,
+                                                  dispatch_get_main_queue(), ^(int token) {
+            (void)token;
+            LPRefreshKeychainLockState();
+            [LPSBOverlayHost refreshVisibility];
+        });
+        if (status == NOTIFY_STATUS_OK) {
+            LPRefreshKeychainLockState();
+        } else {
+            // Do not treat a one-off query as a live, subscribed lock state.
+            // Leave policy fail-closed without wake-time polling or re-registering.
+            gKeychainToken = -1;
+            gGetDeviceLockState = NULL;
+            gKeychainLocked = YES;
+            NSLog(@"[Letterpress] keychain notification registration failed (%u)", (unsigned int)status);
+        }
+    } else {
+        gGetDeviceLockState = NULL;
+    }
+
+    // Same FBSOrientationObserver input as upstream; never set SpringBoard's
+    // device orientation or replace its UIApplication/delegate/run loop.
+    Class cls = NSClassFromString(@"FBSOrientationObserver");
+    id observer = cls ? [[cls alloc] init] : nil;
+    SEL handlerSelector = NSSelectorFromString(@"setHandler:");
+    if (observer && [observer respondsToSelector:handlerSelector]) {
+        void (^handler)(id) = ^(id update) {
+            SEL selector = NSSelectorFromString(@"orientation");
+            if (![update respondsToSelector:selector]) return;
+            NSInteger orientation = ((NSInteger (*)(id, SEL))objc_msgSend)(update, selector);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                gWindowOrientation = (UIInterfaceOrientation)orientation;
+                [LPSBOverlayHost refreshVisibility];
+            });
+        };
+        ((void (*)(id, SEL, id))objc_msgSend)(observer, handlerSelector, handler);
+        gOrientationObserver = observer;
+    }
+}
 
 @implementation LPSBEnvironment
 + (BOOL)isLocked {
@@ -41,10 +101,17 @@ static __weak UIScene *gDisconnectedScene;
 }
 + (BOOL)isLockStateKnown { return gLockKnown; }
 + (BOOL)isScreenBlanked { return gBlanked; }
++ (BOOL)isKeychainLocked { return gKeychainLocked; }
 + (BOOL)isLandscape {
+    if (UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPhone) return NO;
+    if (gOrientationObserver) return UIInterfaceOrientationIsLandscape(gWindowOrientation);
+    // Compatibility fallback when the original private observer is unavailable;
+    // do not let an unrelated external-display scene hide the main-screen HUD.
     for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
         if (![scene isKindOfClass:UIWindowScene.class]) continue;
-        UIInterfaceOrientation orientation = ((UIWindowScene *)scene).interfaceOrientation;
+        UIWindowScene *windowScene = (UIWindowScene *)scene;
+        if (windowScene.screen != UIScreen.mainScreen) continue;
+        UIInterfaceOrientation orientation = windowScene.interfaceOrientation;
         if (UIInterfaceOrientationIsLandscape(orientation)) return YES;
     }
     return NO;
@@ -151,6 +218,7 @@ static void LPUnregisterOverlayWindow(void) {
 + (void)installObservers {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
+    LPInstallOriginalPolicyInputs();
     notify_register_dispatch("com.apple.springboard.hasBlankedScreen", &gBlankToken, dispatch_get_main_queue(), ^(int token) {
         uint64_t state = 1;
         gBlanked = notify_get_state(token, &state) == NOTIFY_STATUS_OK ? (state != 0) : YES;
@@ -164,8 +232,6 @@ static void LPUnregisterOverlayWindow(void) {
     uint64_t blankState = 1;
     if (gBlankToken >= 0 && notify_get_state(gBlankToken, &blankState) == NOTIFY_STATUS_OK) gBlanked = (blankState != 0);
     [LPSBEnvironment isLocked];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refreshVisibility)
-        name:UIScreenCapturedDidChangeNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sceneChanged:)
         name:UISceneDidActivateNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sceneChanged:)
@@ -208,6 +274,9 @@ static void LPUnregisterOverlayWindow(void) {
     window.opaque = NO;
     window.clipsToBounds = YES;
     window.windowLevel = 10000001.0;
+    // As upstream, retain a visible secure window and gate the root view.
+    // Initialise the entire original containment chain while still hidden.
+    controller.view.hidden = YES;
     window.rootViewController = controller;
     gWindow = window;
     if (!LPRegisterOverlayWindow(window)) {
@@ -216,7 +285,7 @@ static void LPUnregisterOverlayWindow(void) {
         gWindow = nil;
         return;
     }
-    window.hidden = YES; // Fail closed until lock/blank/capture policy is checked.
+    window.hidden = NO; // Root is already hidden; never make SpringBoard's overlay key.
     } @finally {
         gStartingWindow = NO;
     }
@@ -233,7 +302,7 @@ static void LPUnregisterOverlayWindow(void) {
     // Blank is hide-only, never an inference about lock state. Keep an existing
     // window idle; initial bootstrap still prewarms the root (not on first wake).
     if (gBlanked && gWindow) {
-        if (!gWindow.hidden) gWindow.hidden = YES;
+        if (!gWindow.rootViewController.view.hidden) gWindow.rootViewController.view.hidden = YES;
         if ([plugin respondsToSelector:refreshSelector]) {
             ((void (*)(id, SEL))objc_msgSend)(plugin, refreshSelector);
         }
@@ -252,12 +321,12 @@ static void LPUnregisterOverlayWindow(void) {
     if (!CGRectEqualToRect(gWindow.frame, bounds)) gWindow.frame = bounds;
     SEL visibleSelector = NSSelectorFromString(@"shouldShowOverlay");
     if (!plugin || ![plugin respondsToSelector:refreshSelector] || ![plugin respondsToSelector:visibleSelector]) {
-        gWindow.hidden = YES;
+        gWindow.rootViewController.view.hidden = YES;
         return;
     }
     ((void (*)(id, SEL))objc_msgSend)(plugin, refreshSelector);
     BOOL visible = ((BOOL (*)(id, SEL))objc_msgSend)(plugin, visibleSelector);
-    if (gWindow.hidden != !visible) gWindow.hidden = !visible;
+    if (gWindow.rootViewController.view.hidden != !visible) gWindow.rootViewController.view.hidden = !visible;
     } @finally {
         gRefreshingVisibility = NO;
     }

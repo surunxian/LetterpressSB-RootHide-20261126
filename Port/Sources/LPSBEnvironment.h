@@ -5,6 +5,7 @@
 + (BOOL)isLocked;
 + (BOOL)isLockStateKnown;
 + (BOOL)isScreenBlanked;
++ (BOOL)isKeychainLocked;
 + (BOOL)isLandscape;
 + (BOOL)isScreenCaptured;
 + (nullable NSString *)resourceBundlePath;

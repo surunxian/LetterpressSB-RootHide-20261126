@@ -156,28 +156,28 @@ final class HudViewModel: ObservableObject {
     @Published var colors: [VortexSystem.Color] = []
     @Published var suggestedColors: [VortexSystem.Color]?
     private var selectedApplications: Set<String> = []
-    private var masterEnabled = false
 
     init() {
-        masterEnabled = LetterpressPreferences.isEnabled
 #if os(iOS)
         let eventProxy = HudEventProxy.shared
 
+        isActivated = eventProxy.isAppInForeground.value && eventProxy.isHudVisible.value
         selectedApplications = LetterpressPreferences.selectedApplications
 
-        // Business activation owns the SwiftUI/Vortex lifetime, not permission
-        // to display it. Lock/blank/capture changes hide the native window via
-        // LPSBPlugin.shouldShowOverlay; they must not tear down the renderer and
-        // replay HudContentView's activation fade on every unlock.
-        Publishers.CombineLatest(
+        // Restore the original HUD activation stream and timing. SpringBoard
+        // itself is never treated as the original Letterpress preview App.
+        Publishers.CombineLatest4(
+            eventProxy.isAppInForeground,
+            eventProxy.isHudVisible,
             eventProxy.isNowPlaying,
             eventProxy.nowPlayingApp
         )
-        .sink { [unowned self] (isNowPlaying, nowPlayingApp) in
-            let newActivated = masterEnabled && isNowPlaying && isEligibleNowPlayingApp(nowPlayingApp)
+        .throttle(for: 0.5, scheduler: DispatchQueue.main, latest: true)
+        .sink { [unowned self] (isAppInForeground, isHudVisible, isNowPlaying, nowPlayingApp) in
+            let newActivated = (isAppInForeground || (isNowPlaying && isEligibleNowPlayingApp(nowPlayingApp))) && isHudVisible
             if isActivated != newActivated {
 #if DEBUG
-                print("now playing: \(isNowPlaying), app: \(nowPlayingApp ?? "")")
+                print("foreground: \(isAppInForeground), visible: \(isHudVisible), now playing: \(isNowPlaying), app: \(nowPlayingApp ?? "")")
 #endif
                 isActivated = newActivated
             }
@@ -214,7 +214,6 @@ final class HudViewModel: ObservableObject {
     }
 
     private func reloadUserDefaults() {
-        masterEnabled = LetterpressPreferences.isEnabled
         fontType = FontType(rawValue: storedFontType) ?? .pingFang
         tokenizerMode = TokenizerMode(rawValue: storedTokenizerMode) ?? .byCharacter
         widthRatio = CGFloat(storedWidthRatio)
@@ -242,27 +241,26 @@ final class HudViewModel: ObservableObject {
             parseColor(from: storedColor4),
         ].filter { $0.opacity > 1e-3 }
         colors = rawColors + [.clear.opacity(0)]
-        selectedApplications = LetterpressPreferences.selectedApplications
-        let current = content
-        content = "\u{0000}"
-        updateContent(current)
-        refreshActivation()
+        let reloadedApplications = LetterpressPreferences.selectedApplications
+        let selectionChanged = selectedApplications != reloadedApplications
+        selectedApplications = reloadedApplications
+        if selectionChanged {
+            // Settings has no original App-foreground transition after editing.
+            // Re-evaluate through the same upstream throttled activation stream,
+            // rather than assigning activation directly or keeping hidden views.
+            let eventProxy = HudEventProxy.shared
+            eventProxy.nowPlayingApp.send(eventProxy.nowPlayingApp.value)
+        }
     }
 
     private func parseColor(from string: String) -> VortexSystem.Color {
         let components = string.split(separator: ",").compactMap { Double($0) }
-        guard components.count == 4, components.allSatisfy({ $0.isFinite && (0...1).contains($0) }) else { return .clear }
+        guard components.count == 4 else { return .clear }
         return VortexSystem.Color(red: components[0], green: components[1], blue: components[2], opacity: components[3])
     }
 
-    // Never run the original App preview timer inside SpringBoard. Preference
-    // reloads must use the same business-only activation as media updates.
-    private func refreshActivation() {
-        let source = HudEventProxy.shared
-        let activated = masterEnabled && source.isNowPlaying.value
-            && isEligibleNowPlayingApp(source.nowPlayingApp.value)
-        if isActivated != activated { isActivated = activated }
-    }
+    // The standalone App's foreground preview timer has no App to monitor in
+    // this injection target; do not substitute SpringBoard's foreground state.
 
     deinit { LPSBNotifyCenter.cancel(reloadToken) }
 
