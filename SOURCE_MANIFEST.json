@@ -251,8 +251,8 @@
     },
     {
       "path": ".github/workflows/apple-build.yml",
-      "bytes": 3156,
-      "sha256": "bfc7d904a6eae443aaa64de3d236727437f584913882c430e00a665388764c2b"
+      "bytes": 3471,
+      "sha256": "498a8201b848be927c451aea839a2130bf2de74afc393fd8a589eb0c466043d1"
     },
     {
       "path": "README.md",

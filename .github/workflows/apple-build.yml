@@ -41,6 +41,14 @@ jobs:
           /usr/bin/uname -m >> Port/Build/output/toolchain.txt
           git rev-parse HEAD > Port/Build/output/source-commit.txt
 
+      - name: Install pinned iOS platform for device destination discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo xcode-select --switch "$DEVELOPER_DIR"
+          sudo /usr/bin/xcodebuild -runFirstLaunch
+          /usr/bin/xcodebuild -downloadPlatform iOS -buildVersion 18.2
+
       - name: Install pinned XcodeGen without Homebrew drift
         shell: bash
         run: |
