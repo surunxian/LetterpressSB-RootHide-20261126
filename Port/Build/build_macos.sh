@@ -92,6 +92,14 @@ DYLIB="$PRODUCTS/LetterpressSB.dylib"
 /usr/bin/shasum -a 256 "$DYLIB"
 PREFS="$PRODUCTS/LetterpressSBPrefs.bundle"
 [[ -s "$PREFS/LetterpressSBPrefs" ]] || fail "missing compiled settings bundle"
+# Keep the original-app PNG files byte-for-byte, irrespective of Xcode's
+# resource-copy transforms. Restore BEFORE signing the complete bundle.
+for icon in icon.png icon@2x.png icon@3x.png; do
+  source_icon="$PORT/Preferences/Resources/$icon"
+  [[ -s "$source_icon" ]] || fail "missing original-app icon: $icon"
+  /bin/cp "$source_icon" "$PREFS/$icon"
+  /usr/bin/cmp -s "$source_icon" "$PREFS/$icon" || fail "icon copy differs: $icon"
+done
 /usr/bin/codesign --force --sign - --timestamp=none "$PREFS"
 /usr/bin/codesign --verify --strict --verbose=2 "$PREFS"
 python3 "$VERIFY" --macho "$DYLIB" --output "$OUT/macho-verification.json"

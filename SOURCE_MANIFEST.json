@@ -16,8 +16,8 @@
     },
     {
       "path": "Port/Build/build_macos.sh",
-      "bytes": 5289,
-      "sha256": "05e2df2cd12259df1e8770465587692c610f05a6916790722db7e8d9937b05e8"
+      "bytes": 5730,
+      "sha256": "33d29347ab03e3d2be97feb9190dcf36c770c8e7cb8cd3242b2c84e61cbf93e0"
     },
     {
       "path": "Port/Build/macho_codesign.py",
