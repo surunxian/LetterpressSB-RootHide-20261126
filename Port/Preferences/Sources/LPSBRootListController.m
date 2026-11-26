@@ -6,7 +6,6 @@
 // Scoped declarations from theos/headers Preferences interfaces. Keeping these
 // local avoids adding a new build dependency or changing the project file.
 @interface PSSpecifier : NSObject
-@property (nonatomic, retain) NSString *name;
 - (id)propertyForKey:(NSString *)key;
 - (void)setProperty:(id)value forKey:(NSString *)key;
 @end
@@ -19,86 +18,34 @@
 @interface PSListController : PSViewController <UITableViewDelegate, UITableViewDataSource> {
     NSMutableArray *_specifiers;
 }
-@property (nonatomic, retain) UITableView *tableView;
 - (NSMutableArray *)loadSpecifiersFromPlistName:(NSString *)name target:(PSListController *)target;
-- (NSInteger)indexOfGroup:(NSInteger)group;
-- (BOOL)getGroup:(NSInteger *)group row:(NSInteger *)row ofSpecifier:(PSSpecifier *)specifier;
 - (void)reloadSpecifiers;
 @end
 
 @interface LPSBRootListController : PSListController
-@property (nonatomic, copy) NSDictionary<NSString *, PSSpecifier *> *sliderGroups;
 @property (nonatomic, copy) NSDictionary<NSString *, PSSpecifier *> *preferenceSpecifiers;
 @end
 
 @implementation LPSBRootListController
 
-- (NSString *)titleForSliderGroup:(PSSpecifier *)group value:(id)value {
-    NSString *title = [group propertyForKey:@"lpSliderTitle"] ?: group.name ?: @"";
-    NSString *format = [group propertyForKey:@"lpValueFormat"];
-    if (![format isKindOfClass:NSString.class] || ![value respondsToSelector:@selector(doubleValue)]) {
-        return title;
-    }
-    double scale = [[group propertyForKey:@"lpValueScale"] doubleValue];
-    // Formats and units are copied from SheetView.swift, including the original
-    // rounded count display. Values are never rounded or rescaled for storage.
-    NSString *number = [NSString stringWithFormat:format, [value doubleValue] * scale];
-    return [NSString stringWithFormat:@"%@ · %@", title, number];
-}
-
 - (NSMutableArray *)specifiers {
     if (!_specifiers) {
         _specifiers = [self loadSpecifiersFromPlistName:@"Root" target:self];
-        NSMutableDictionary<NSString *, PSSpecifier *> *groups = [NSMutableDictionary dictionary];
-        NSMutableDictionary<NSString *, PSSpecifier *> *sliders = [NSMutableDictionary dictionary];
+        NSMutableDictionary<NSString *, PSSpecifier *> *preferences = [NSMutableDictionary dictionary];
         for (PSSpecifier *specifier in _specifiers) {
-            NSString *sliderKey = [specifier propertyForKey:@"lpSliderKey"];
-            if ([sliderKey isKindOfClass:NSString.class]) {
-                [specifier setProperty:specifier.name ?: @"" forKey:@"lpSliderTitle"];
-                groups[sliderKey] = specifier;
-            }
             NSString *key = [specifier propertyForKey:@"key"];
-            if ([key isKindOfClass:NSString.class]) sliders[key] = specifier;
+            if ([key isKindOfClass:NSString.class]) preferences[key] = specifier;
         }
-        self.sliderGroups = groups;
-        self.preferenceSpecifiers = sliders;
-        for (NSString *key in groups) {
-            PSSpecifier *slider = sliders[key];
-            if (!slider) continue;
-            id value = [self readPreferenceValue:slider] ?: [slider propertyForKey:@"default"];
-            groups[key].name = [self titleForSliderGroup:groups[key] value:value];
-        }
+        self.preferenceSpecifiers = preferences;
     }
     return _specifiers ?: [NSMutableArray array];
 }
 
-- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-    NSInteger index = [self indexOfGroup:section];
-    if (index >= 0 && index < (NSInteger)_specifiers.count) {
-        PSSpecifier *group = _specifiers[(NSUInteger)index];
-        if ([group propertyForKey:@"lpSliderKey"]) return group.name;
-    }
-    return [super tableView:tableView titleForHeaderInSection:section];
-}
-
-- (void)setPreferenceValue:(id)value specifier:(PSSpecifier *)specifier {
-    // Preferences remains responsible for persistence and PostNotification.
-    // Do not duplicate defaults domains, notification names, or renderer logic.
-    [super setPreferenceValue:value specifier:specifier];
-    NSString *key = [specifier propertyForKey:@"key"];
-    PSSpecifier *group = key ? self.sliderGroups[key] : nil;
-    if (!group) return;
-    group.name = [self titleForSliderGroup:group value:value];
-    NSInteger section = 0, row = 0;
-    if ([self getGroup:&section row:&row ofSpecifier:specifier]) {
-        UITableViewHeaderFooterView *header = [self.tableView headerViewForSection:section];
-        header.textLabel.numberOfLines = 0;
-        header.textLabel.text = group.name;
-        [header setNeedsLayout];
-    }
-    // Never reload the table/section while dragging: that would replace the
-    // active native PSSliderCell and interrupt continuous tracking.
-}
+// Keep the inherited Preferences slider read/write implementation untouched.
+// PSSliderCell.showValue owns the value label; static group titles and footers
+// retain descriptions/units without mutating specifiers or table headers while
+// the system slider is tracking. No private group lookup or table reload runs
+// after a successful preference write.
 
 - (void)confirmResetToDefaults {
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"恢复默认"
@@ -139,8 +86,6 @@
         [domains addObject:domain];
         NSString *notification = [specifier propertyForKey:@"PostNotification"];
         if (notification.length) [notifications addObject:notification];
-        PSSpecifier *group = self.sliderGroups[key];
-        if (group) group.name = [self titleForSliderGroup:group value:value];
     }
     NSString *colorDomain = [self.preferenceSpecifiers[@"isEnabled"] propertyForKey:@"defaults"];
     NSDictionary<NSString *, NSString *> *colorDefaults = @{
@@ -156,7 +101,6 @@
     for (NSString *domain in domains) CFPreferencesAppSynchronize((__bridge CFStringRef)domain);
     for (NSString *notification in notifications) notify_post(notification.UTF8String);
     _specifiers = nil;
-    self.sliderGroups = nil;
     self.preferenceSpecifiers = nil;
     [self reloadSpecifiers];
 }

@@ -117,9 +117,8 @@ static BOOL LPBooleanGetter(id target, NSString *name, BOOL fallback) {
 @end
 
 static NSArray<NSString *> *LPDefaultApplications(void) {
-    return @[@"com.tencent.QQMusic", @"com.netease.cloudmusic", @"com.kugou.kugou1002",
-             @"com.kugou.kgyouth", @"com.soda.music", @"com.wenyu.bodian",
-             @"com.yeelion.kwplayer", @"com.migu.migumobilemusic", @"com.fq.music"];
+    // No built-in preselection. Explicit current/legacy selections still win.
+    return @[];
 }
 static NSMutableSet<NSString *> *LPReadApplications(NSUserDefaults *defaults) {
     NSDictionary *domain = [defaults persistentDomainForName:LPNativeDomain] ?: @{};

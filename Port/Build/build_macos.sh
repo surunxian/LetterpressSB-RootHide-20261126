@@ -92,8 +92,8 @@ DYLIB="$PRODUCTS/LetterpressSB.dylib"
 /usr/bin/shasum -a 256 "$DYLIB"
 PREFS="$PRODUCTS/LetterpressSBPrefs.bundle"
 [[ -s "$PREFS/LetterpressSBPrefs" ]] || fail "missing compiled settings bundle"
-# Keep the original-app PNG files byte-for-byte, irrespective of Xcode's
-# resource-copy transforms. Restore BEFORE signing the complete bundle.
+# Keep the reviewed rounded settings PNG files byte-for-byte, irrespective of
+# Xcode's resource-copy transforms. Restore BEFORE signing the complete bundle.
 for icon in icon.png icon@2x.png icon@3x.png; do
   source_icon="$PORT/Preferences/Resources/$icon"
   [[ -s "$source_icon" ]] || fail "missing original-app icon: $icon"

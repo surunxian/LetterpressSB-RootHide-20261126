@@ -10,6 +10,7 @@ import re
 import struct
 import sys
 import tarfile
+import zlib
 from pathlib import Path, PurePosixPath
 
 _signature_spec = importlib.util.spec_from_file_location(
@@ -42,6 +43,99 @@ def require(condition, message):
 
 def sha256(data):
     return hashlib.sha256(data).hexdigest()
+
+
+# test6: alpha-only rounded derivatives of the pinned test5-packfix artwork.
+# Tuple: size, rounded PNG SHA256, original PNG SHA256, original decoded RGB
+# SHA256, deterministic 16x16-coverage corner-alpha SHA256. No Pillow dependency.
+PREFERENCES_ICONS = {
+    "icon.png": (29,
+        "23436342295c4ddc59ce6d3de0ab00943de39513bbf221b3ff002bd53237b1a2",
+        "c29bc984a7b3e056482d90c98e5a63141f4c168e15c1439c3122ec9f1ce4409b",
+        "ff9e331e0c764146bea9993760d788a9fc8110a9eb2c46a047c39ea842eee7d5",
+        "85380cdae772d268aff863cc121f042ccf4b69f034940ff064881b0d0ed07f66"),
+    "icon@2x.png": (58,
+        "c8af9801dbec88ddfcf44256251cc224bdd6e8a8a1e8aa02ffe9d628e832c9e8",
+        "59135ba77ea52a390b333ac5edfbb74b210867ee856c3b525dc594891c4b6f6d",
+        "22cbe68845f8381a047cbc303a7f739f19e2094514703017edd87b0b0c499598",
+        "87ca211660dc793fbf269f0eaa637309dcb4cfdf6cb08f6e6405b4058663dadf"),
+    "icon@3x.png": (87,
+        "4cf6ff27bd1e557cb4a2a34941a8bfdae9663bfc1c035ce18dfc9e7a00467a68",
+        "a0663ea7c72a32202d5733651b3ea35917f68261f92bacdbb6307d11dbd193b3",
+        "b40115e4426b15d2971bbcbe403208a5c31fe1c50c455cb5a4905881082d4d34",
+        "d4875d0abb7d82f83d5e9e4aff684def36b7fd55787ded438cbdee3c4b312e28"),
+}
+
+
+def inspect_preferences_icon(name, data):
+    require(name in PREFERENCES_ICONS, "unknown preferences icon")
+    n, png_hash, source_hash, rgb_hash, alpha_hash = PREFERENCES_ICONS[name]
+    require(data[:8] == b"\x89PNG\r\n\x1a\n" and len(data) >= 33
+            and struct.unpack(">II", data[16:24]) == (n, n),
+            "missing or invalid original-app icon size")
+    require(sha256(data) == png_hash, f"unreviewed rounded original-app icon: {name}")
+    require(data[12:16] == b"IHDR" and data[24:29] == bytes((8, 6, 0, 0, 0)),
+            "icon must retain 8-bit RGBA alpha, noninterlaced")
+    offset, compressed, ended = 8, bytearray(), False
+    while offset < len(data):
+        require(offset + 12 <= len(data), "truncated icon chunk")
+        length = struct.unpack_from(">I", data, offset)[0]
+        end = offset + 12 + length
+        require(end <= len(data), "icon chunk extends beyond PNG")
+        kind = data[offset + 4:offset + 8]
+        chunk = data[offset + 8:end - 4]
+        require(zlib.crc32(kind + chunk) & 0xFFFFFFFF == struct.unpack(">I", data[end - 4:end])[0],
+                "icon PNG CRC mismatch")
+        if kind == b"IDAT":
+            compressed.extend(chunk)
+        if kind == b"IEND":
+            require(length == 0 and end == len(data), "invalid PNG end")
+            ended = True
+        offset = end
+    require(ended and compressed, "incomplete icon PNG")
+    stride = n * 4
+    expected = n * (stride + 1)
+    inflater = zlib.decompressobj()
+    try:
+        raw = inflater.decompress(bytes(compressed), expected + 1)
+    except zlib.error as error:
+        raise VerificationError(f"invalid icon compression: {name}") from error
+    require(len(raw) == expected and inflater.eof and not inflater.unused_data
+            and not inflater.unconsumed_tail, "invalid icon pixel stream")
+    pixels, previous = bytearray(), bytearray(stride)
+    for y in range(n):
+        start = y * (stride + 1)
+        method = raw[start]
+        require(0 <= method <= 4, "invalid icon PNG row filter")
+        row = bytearray(raw[start + 1:start + 1 + stride])
+        for x in range(stride):
+            left = row[x - 4] if x >= 4 else 0
+            up = previous[x]
+            upper_left = previous[x - 4] if x >= 4 else 0
+            if method == 0:
+                predictor = 0
+            elif method == 1:
+                predictor = left
+            elif method == 2:
+                predictor = up
+            elif method == 3:
+                predictor = (left + up) // 2
+            else:
+                p = left + up - upper_left
+                a, b, c = abs(p-left), abs(p-up), abs(p-upper_left)
+                predictor = left if a <= b and a <= c else up if b <= c else upper_left
+            row[x] = (row[x] + predictor) & 255
+        pixels.extend(row)
+        previous = row
+    rgb = bytes(value for index, value in enumerate(pixels) if index % 4 != 3)
+    alpha = bytes(pixels[3::4])
+    require(sha256(rgb) == rgb_hash, "icon RGB differs from pinned original artwork")
+    require(sha256(alpha) == alpha_hash, "icon alpha differs from reviewed rounded mask")
+    require(all(alpha[i] == 0 for i in (0, n-1, n*(n-1), n*n-1))
+            and alpha[(n//2)*n+n//2] == 255, "icon lacks transparent corners/opaque center")
+    return {"size": [n, n], "sha256": png_hash, "original_png_sha256": source_hash,
+            "original_rgb_sha256": rgb_hash, "rounded_alpha_sha256": alpha_hash,
+            "original_rgb_preserved": True, "transparent_corners": True}
 
 
 def text(data, start, end):
@@ -348,14 +442,13 @@ def inspect_deb(data, expected_control=None):
     for item in root_plist.get("items", []):
         if item.get("key"):
             require(item.get("defaults") == "com.82flex.letterpress", "mixed preference domains")
-    for name, pixels in (("icon.png", 29), ("icon@2x.png", 58), ("icon@3x.png", 87)):
-        icon = files.get(PREFS + "/" + name, b"")
-        require(icon[:8] == b"\x89PNG\r\n\x1a\n" and len(icon) >= 24
-                and struct.unpack(">II", icon[16:24]) == (pixels, pixels), "missing or invalid original-app icon size")
+    icon_report = {name: inspect_preferences_icon(name, files.get(PREFS + "/" + name, b""))
+                   for name in PREFERENCES_ICONS}
     prefs_report = inspect_macho(files[PREFEXE], preferences=True)
     resources = inspect_resources(files)
     return {"sha256": sha256(data), "bytes": len(data), "control": fields,
             "preferences_macho": prefs_report, "macho": inspect_macho(files[DYLIB]), "resources": resources,
+            "preferences_icons": icon_report,
             "spm_resource_bundles": sorted(spm_bundles),
             "payload_sha256": {n: sha256(c) for n, c in sorted(files.items())},
             "checks": {"springboard_only": True, "no_applications": True,

@@ -11,11 +11,7 @@ enum LetterpressPreferences {
         let defaults = UserDefaults(suiteName: domain)!
         defaults.register(defaults: [
             "isEnabled": true,
-            "selectedApplications": [
-                "com.tencent.QQMusic", "com.netease.cloudmusic", "com.kugou.kugou1002",
-                "com.kugou.kgyouth", "com.soda.music", "com.wenyu.bodian",
-                "com.yeelion.kwplayer", "com.migu.migumobilemusic", "com.fq.music"
-            ],
+            "selectedApplications": [String](),
             "shouldDisplayOnLockScreen": false,
             "shouldDisplayWhenScreencast": true,
             "isAdaptiveColorEnabled": false
@@ -28,10 +24,13 @@ enum LetterpressPreferences {
     static var shouldDisplayWhenScreencast: Bool { bool("shouldDisplayWhenScreencast", true) }
     static var isAdaptiveColorEnabled: Bool { bool("isAdaptiveColorEnabled", false) }
     static var selectedApplications: Set<String> {
-        if let csv = store.object(forKey: "selectedApplicationsCSV") as? String {
+        // Only an explicit saved choice is eligible; registration defaults must
+        // never silently opt an app in. An explicitly empty CSV also wins.
+        let saved = store.persistentDomain(forName: domain) ?? [:]
+        if let csv = saved["selectedApplicationsCSV"] as? String {
             return Set(csv.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
         }
-        return Set(store.stringArray(forKey: "selectedApplications") ?? [])
+        return Set(saved["selectedApplications"] as? [String] ?? [])
     }
 
     static func string(_ key: String, _ fallback: String) -> String {

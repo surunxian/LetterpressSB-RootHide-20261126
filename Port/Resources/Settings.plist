@@ -14,17 +14,7 @@
 			<key>detail</key>
 			<string>ATLApplicationListMultiSelectionController</string>
             <key>default</key>
-            <array>
-                <string>com.tencent.QQMusic</string>
-                <string>com.netease.cloudmusic</string>
-                <string>com.kugou.kugou1002</string>
-                <string>com.kugou.kgyouth</string>
-                <string>com.soda.music</string>
-				<string>com.wenyu.bodian</string>
-				<string>com.yeelion.kwplayer</string>
-				<string>com.migu.migumobilemusic</string>
-				<string>com.fq.music</string>
-            </array>
+            <array/>
 			<key>defaults</key>
 			<string>com.82flex.letterpress</string>
 			<key>key</key>

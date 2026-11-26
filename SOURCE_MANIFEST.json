@@ -2,7 +2,7 @@
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
   "baseline_test4": "3f57e86a5381b9a9edccf389a23527ed56c5f640",
-  "status": "test5: original renderer retained; user confirmed test4 transparency/autostart/Chinese; new fixes need device verification",
+  "status": "test6 candidate: native slider path; retained renderer on lock; rounded icon; no nine-app preset; trimmed settings footer; device verification required",
   "files": [
     {
       "path": ".github/workflows/apple-build.yml",
@@ -16,8 +16,8 @@
     },
     {
       "path": "Port/Build/build_macos.sh",
-      "bytes": 5730,
-      "sha256": "33d29347ab03e3d2be97feb9190dcf36c770c8e7cb8cd3242b2c84e61cbf93e0"
+      "bytes": 5743,
+      "sha256": "32395263add7aa13f73d2cd620884643e9e2067c8a52aef714586052e17b447e"
     },
     {
       "path": "Port/Build/macho_codesign.py",
@@ -41,8 +41,8 @@
     },
     {
       "path": "Port/Build/verify.py",
-      "bytes": 21983,
-      "sha256": "211e4efedd3276a36b56ae7add03aae7e2bea4642c32e98e5b7fa0eee0dd1432"
+      "bytes": 26621,
+      "sha256": "05ffc532c04b444504970749ab59c24656c71b9608acdd04e6d256272b08a6fc"
     },
     {
       "path": "Port/LICENSE",
@@ -56,23 +56,23 @@
     },
     {
       "path": "Port/Preferences/Resources/Root.plist",
-      "bytes": 22828,
-      "sha256": "6a85d4dd043b7577fd6056992986e5a579ed6e6e63254166ac3b80bfc3bd2a03"
+      "bytes": 22658,
+      "sha256": "6ea126f69fc31532e45085592f30e1017c1afbb58253a0f4c947f537924ae6ef"
     },
     {
       "path": "Port/Preferences/Resources/icon.png",
-      "bytes": 1907,
-      "sha256": "c29bc984a7b3e056482d90c98e5a63141f4c168e15c1439c3122ec9f1ce4409b"
+      "bytes": 1999,
+      "sha256": "23436342295c4ddc59ce6d3de0ab00943de39513bbf221b3ff002bd53237b1a2"
     },
     {
       "path": "Port/Preferences/Resources/icon@2x.png",
-      "bytes": 6803,
-      "sha256": "59135ba77ea52a390b333ac5edfbb74b210867ee856c3b525dc594891c4b6f6d"
+      "bytes": 6974,
+      "sha256": "c8af9801dbec88ddfcf44256251cc224bdd6e8a8a1e8aa02ffe9d628e832c9e8"
     },
     {
       "path": "Port/Preferences/Resources/icon@3x.png",
-      "bytes": 14463,
-      "sha256": "a0663ea7c72a32202d5733651b3ea35917f68261f92bacdbb6307d11dbd193b3"
+      "bytes": 14777,
+      "sha256": "4cf6ff27bd1e557cb4a2a34941a8bfdae9663bfc1c035ce18dfc9e7a00467a68"
     },
     {
       "path": "Port/Preferences/Resources/preference-loader.plist",
@@ -81,13 +81,13 @@
     },
     {
       "path": "Port/Preferences/Sources/LPSBNativeOptionsController.m",
-      "bytes": 20887,
-      "sha256": "2179d5ff520f1288c161ea2e752e652b0bf821401aa9ea31530dd8de7de7cc88"
+      "bytes": 20734,
+      "sha256": "e08d276cbacbdc8e0950833ee5ec39796a6e59cae2f094bc6f8bb4a61e045abb"
     },
     {
       "path": "Port/Preferences/Sources/LPSBRootListController.m",
-      "bytes": 8273,
-      "sha256": "861bb6a6b44677a0d281c11d5f3d50dc00b75ca205c5d663693ee957349a509e"
+      "bytes": 5300,
+      "sha256": "fc2c98e3bcb8818043f5c40353f8fd8e6e881ac4a910ceef6d3b56f691b40f7a"
     },
     {
       "path": "Port/Resources/ChillBitmapSE_7px.ttf",
@@ -101,8 +101,8 @@
     },
     {
       "path": "Port/Resources/Settings.plist",
-      "bytes": 1592,
-      "sha256": "73dbd86786281dfa6957a79280121a930eebc1ae7a19f0505e737acac476db2c"
+      "bytes": 1151,
+      "sha256": "5919059809d31994b735f1f1a211b82512c46e06474dca89d9ebe169204c74b4"
     },
     {
       "path": "Port/Resources/ThirdPartyNotices/DominantColors-MIT.txt",
@@ -171,8 +171,8 @@
     },
     {
       "path": "Port/Sources/HudViewModel.swift",
-      "bytes": 11982,
-      "sha256": "f4097da8a2f66967d2867f175af334d28ea0af9119097ef4a6e335c10b42c5bf"
+      "bytes": 12202,
+      "sha256": "633f1196d49b30d33647af5e4c03dec442571c09f9ee21b6fc5090c350907bfa"
     },
     {
       "path": "Port/Sources/LPSBEnvironment.h",
@@ -201,8 +201,8 @@
     },
     {
       "path": "Port/Sources/LetterpressPreferences.swift",
-      "bytes": 3315,
-      "sha256": "76403219ce46c4dca5ae96038b2fc9a2902703cc4dd1458518c6d5ec96aa65a0"
+      "bytes": 3266,
+      "sha256": "cac1f17935a3d8a723ab3777d9706a2ffb11404190e31b9516abb1d89ab0f80a"
     },
     {
       "path": "Port/Sources/LetterpressSB-Bridging-Header.h",
@@ -267,7 +267,7 @@
     {
       "path": "Port/control",
       "bytes": 444,
-      "sha256": "c3c14f19dd9a9fa49e5de8741f464d366cee7755b600732b9b431dd6f19ca0b7"
+      "sha256": "3544dabc4af3255fa71d07cf612e1b6178b9fcfa5924cce6e9bd98559b621dd4"
     },
     {
       "path": "Port/project.yml",
@@ -276,8 +276,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 3435,
-      "sha256": "e29a3012447518b78d00ba42680f9898ca0574e33fe577b80ce6d64355616b82"
+      "bytes": 3963,
+      "sha256": "55399b4c40bc572c7e7630f36bcfc65a1f157b5f3b6fbadc3e515e0063dcb5b2"
     },
     {
       "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",
@@ -289,5 +289,6 @@
       "bytes": 1069,
       "sha256": "5ecac440fbe9e244840edb76b386403bfc0384f229383959c2a3423319bf0e5d"
     }
-  ]
+  ],
+  "baseline_test5": "0e287074fd9d6f928ed702344ba91743d58fdaf9"
 }

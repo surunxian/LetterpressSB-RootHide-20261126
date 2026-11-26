@@ -156,30 +156,31 @@ final class HudViewModel: ObservableObject {
     @Published var colors: [VortexSystem.Color] = []
     @Published var suggestedColors: [VortexSystem.Color]?
     private var selectedApplications: Set<String> = []
+    private var masterEnabled = false
 
     init() {
+        masterEnabled = LetterpressPreferences.isEnabled
 #if os(iOS)
         let eventProxy = HudEventProxy.shared
 
-        // Defaults registered only in the explicit tweak domain.
-        isActivated = eventProxy.isAppInForeground.value && eventProxy.isHudVisible.value
-        selectedApplications = Set(Self.userDefaults.stringArray(forKey: "selectedApplications") ?? [])
+        selectedApplications = LetterpressPreferences.selectedApplications
 
-        Publishers.CombineLatest4(
-            eventProxy.isAppInForeground,
-            eventProxy.isHudVisible,
+        // Business activation owns the SwiftUI/Vortex lifetime, not permission
+        // to display it. Lock/blank/capture changes hide the native window via
+        // LPSBPlugin.shouldShowOverlay; they must not tear down the renderer and
+        // replay HudContentView's activation fade on every unlock.
+        Publishers.CombineLatest(
             eventProxy.isNowPlaying,
             eventProxy.nowPlayingApp
         )
-        .sink { [unowned self] (isAppInForeground, isHudVisible, isNowPlaying, nowPlayingApp) in
-            let newActivated = (isAppInForeground || (isNowPlaying && isEligibleNowPlayingApp(nowPlayingApp))) && isHudVisible
+        .sink { [unowned self] (isNowPlaying, nowPlayingApp) in
+            let newActivated = masterEnabled && isNowPlaying && isEligibleNowPlayingApp(nowPlayingApp)
             if isActivated != newActivated {
 #if DEBUG
-                print("foreground: \(isAppInForeground), visible: \(isHudVisible), now playing: \(isNowPlaying), app: \(nowPlayingApp ?? "")")
+                print("now playing: \(isNowPlaying), app: \(nowPlayingApp ?? "")")
 #endif
                 isActivated = newActivated
             }
-
         }
         .store(in: &cancellables)
 
@@ -213,6 +214,7 @@ final class HudViewModel: ObservableObject {
     }
 
     private func reloadUserDefaults() {
+        masterEnabled = LetterpressPreferences.isEnabled
         fontType = FontType(rawValue: storedFontType) ?? .pingFang
         tokenizerMode = TokenizerMode(rawValue: storedTokenizerMode) ?? .byCharacter
         widthRatio = CGFloat(storedWidthRatio)
@@ -253,11 +255,13 @@ final class HudViewModel: ObservableObject {
         return VortexSystem.Color(red: components[0], green: components[1], blue: components[2], opacity: components[3])
     }
 
-    // Never run the original App preview timer inside SpringBoard.
+    // Never run the original App preview timer inside SpringBoard. Preference
+    // reloads must use the same business-only activation as media updates.
     private func refreshActivation() {
         let source = HudEventProxy.shared
-        isActivated = source.isHudVisible.value && source.isNowPlaying.value
+        let activated = masterEnabled && source.isNowPlaying.value
             && isEligibleNowPlayingApp(source.nowPlayingApp.value)
+        if isActivated != activated { isActivated = activated }
     }
 
     deinit { LPSBNotifyCenter.cancel(reloadToken) }
