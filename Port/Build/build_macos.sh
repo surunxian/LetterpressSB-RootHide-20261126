@@ -44,9 +44,9 @@ shopt -u nullglob dotglob
 # Passing this probe is NOT complete ABI validation or a device test.
 python3 "$SCRIPT_DIR/preflight_apple.py" --output "$OUT/apple-preflight"
 
-# Restrict generated projects, checkouts and intermediates to Port/Build.
-export HOME="$SCRIPT_DIR/home"
-mkdir -p "$HOME" "$OUT/derived" "$OUT/project-root"
+# Keep Xcode's real user HOME for platform/CoreSimulator service discovery.
+# Projects, package checkouts and intermediates still use explicit scoped paths.
+mkdir -p "$OUT/derived" "$OUT/project-root"
 ROOT="$OUT/project-root"
 ln -s "$PORT/Sources" "$ROOT/Sources"
 ln -s "$PORT/Vendor" "$ROOT/Vendor"

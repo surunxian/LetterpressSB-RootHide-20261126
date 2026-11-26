@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           sudo xcode-select --switch "$DEVELOPER_DIR"
           sudo /usr/bin/xcodebuild -runFirstLaunch
-          /usr/bin/xcodebuild -downloadPlatform iOS -buildVersion 18.2
+          /usr/bin/xcodebuild -checkFirstLaunchStatus
 
       - name: Install pinned XcodeGen without Homebrew drift
         shell: bash

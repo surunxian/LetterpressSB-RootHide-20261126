@@ -211,8 +211,8 @@
     },
     {
       "path": "Port/Build/build_macos.sh",
-      "bytes": 5245,
-      "sha256": "cf21b76201698601a41bb1fe25e333bc459801d84912a3939ec3216b7f0298fe"
+      "bytes": 5289,
+      "sha256": "05e2df2cd12259df1e8770465587692c610f05a6916790722db7e8d9937b05e8"
     },
     {
       "path": "Port/Build/package.py",
@@ -251,8 +251,8 @@
     },
     {
       "path": ".github/workflows/apple-build.yml",
-      "bytes": 3471,
-      "sha256": "498a8201b848be927c451aea839a2130bf2de74afc393fd8a589eb0c466043d1"
+      "bytes": 3454,
+      "sha256": "a65121bdbd35a0b4edee9213eeb8c114cd92293c4a8eb0fce0517829306652cd"
     },
     {
       "path": "README.md",
