@@ -1,9 +1,13 @@
-Package: dev.letterpress.springboard
-Name: LetterpressSB
-Version: 0.1.0~test4
+Package: com.82flex.letterpress
+Name: Letterpress
+Version: 0.1.0~test5
 Architecture: iphoneos-arm64e
-Description: Experimental SpringBoard SwiftUI port of Letterpress; device compatibility unverified.
-Maintainer: LetterpressSB Port Contributors
+Description: Letterpress live typography with the original SwiftUI and Vortex renderer, adapted for SpringBoard.
+Author: 82Flex
+Maintainer: 82Flex
 Section: Tweaks
 Priority: optional
 Depends: firmware (>= 16.0), preferenceloader
+Conflicts: dev.letterpress.springboard
+Replaces: dev.letterpress.springboard
+Provides: dev.letterpress.springboard

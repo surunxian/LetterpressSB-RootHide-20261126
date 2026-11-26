@@ -153,12 +153,12 @@ static void LPUnregisterOverlayWindow(void) {
     dispatch_once(&onceToken, ^{
     notify_register_dispatch("com.apple.springboard.hasBlankedScreen", &gBlankToken, dispatch_get_main_queue(), ^(int token) {
         uint64_t state = 1;
-        if (notify_get_state(token, &state) == NOTIFY_STATUS_OK) gBlanked = (state != 0);
+        gBlanked = notify_get_state(token, &state) == NOTIFY_STATUS_OK ? (state != 0) : YES;
         [self refreshVisibility];
     });
     notify_register_dispatch("com.apple.springboard.lockstate", &gLockToken, dispatch_get_main_queue(), ^(int token) {
         (void)token;
-        [LPSBEnvironment isLocked];
+        // refreshVisibility re-queries the live lock manager before any show.
         [self refreshVisibility];
     });
     uint64_t blankState = 1;
@@ -228,18 +228,28 @@ static void LPUnregisterOverlayWindow(void) {
     if (gRefreshingVisibility || gStartingWindow) return;
     gRefreshingVisibility = YES;
     @try {
+    Class plugin = NSClassFromString(@"LPSBPlugin");
+    SEL refreshSelector = NSSelectorFromString(@"refresh");
+    // Blank is hide-only, never an inference about lock state. Keep an existing
+    // window idle; initial bootstrap still prewarms the root (not on first wake).
+    if (gBlanked && gWindow) {
+        if (!gWindow.hidden) gWindow.hidden = YES;
+        if ([plugin respondsToSelector:refreshSelector]) {
+            ((void (*)(id, SEL))objc_msgSend)(plugin, refreshSelector);
+        }
+        return;
+    }
     UIWindowScene *scene = LPOverlayScene();
     if (gWindow && (!scene || gWindow.windowScene != scene)) LPUnregisterOverlayWindow();
     if (!scene) return;
-    Class plugin = NSClassFromString(@"LPSBPlugin");
     if (!gWindow) {
         SEL makeSelector = NSSelectorFromString(@"makeRootViewController");
         UIViewController *root = [plugin respondsToSelector:makeSelector] ? ((id (*)(id, SEL))objc_msgSend)(plugin, makeSelector) : nil;
         if (root) [self startWithRootViewController:root];
     }
     if (!gWindow) return;
-    gWindow.frame = scene.coordinateSpace.bounds;
-    SEL refreshSelector = NSSelectorFromString(@"refresh");
+    CGRect bounds = scene.coordinateSpace.bounds;
+    if (!CGRectEqualToRect(gWindow.frame, bounds)) gWindow.frame = bounds;
     SEL visibleSelector = NSSelectorFromString(@"shouldShowOverlay");
     if (!plugin || ![plugin respondsToSelector:refreshSelector] || ![plugin respondsToSelector:visibleSelector]) {
         gWindow.hidden = YES;
@@ -247,7 +257,7 @@ static void LPUnregisterOverlayWindow(void) {
     }
     ((void (*)(id, SEL))objc_msgSend)(plugin, refreshSelector);
     BOOL visible = ((BOOL (*)(id, SEL))objc_msgSend)(plugin, visibleSelector);
-    gWindow.hidden = !visible;
+    if (gWindow.hidden != !visible) gWindow.hidden = !visible;
     } @finally {
         gRefreshingVisibility = NO;
     }

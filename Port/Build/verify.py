@@ -23,7 +23,7 @@ FILTER = "Library/MobileSubstrate/DynamicLibraries/LetterpressSB.plist"
 RESOURCES = "Library/Application Support/LetterpressSB.bundle"
 PREFS = "Library/PreferenceBundles/LetterpressSBPrefs.bundle"
 PREFEXE = PREFS + "/LetterpressSBPrefs"
-LOADER = "Library/PreferenceLoader/Preferences/LetterpressSB.plist"
+LOADER = "Library/PreferenceLoader/Preferences/com.82flex.letterpress.plist"
 SPRINGBOARD_FILTER = {"Filter": {"Bundles": ["com.apple.springboard"]}}
 MACH_MAGICS = {bytes.fromhex(s) for s in
                ("cffaedfe", "feedfacf", "cefaedfe", "feedface",
@@ -296,6 +296,11 @@ def inspect_deb(data, expected_control=None):
     require(set(controls) == {"control", "md5sums"} and not control_dirs,
             "only control and md5sums are allowed; no maintainer/restart scripts")
     fields = control_fields(controls["control"])
+    require(fields.get("Package") == "com.82flex.letterpress", "incorrect Letterpress package ID")
+    require(fields.get("Name") == "Letterpress" and fields.get("Author") == "82Flex"
+            and fields.get("Maintainer") == "82Flex", "incorrect user-requested display identity")
+    require(fields.get("Conflicts") == "dev.letterpress.springboard"
+            and fields.get("Replaces") == "dev.letterpress.springboard", "missing legacy package replacement")
     if expected_control is not None:
         require(fields == control_fields(expected_control), "deb control differs from supplied control")
     files, dirs = _tar(members["data.tar.gz"])
@@ -332,7 +337,21 @@ def inspect_deb(data, expected_control=None):
     prefs_info = plistlib.loads(files.get(PREFS + "/Info.plist", b""))
     require(prefs_info.get("CFBundleExecutable") == "LetterpressSBPrefs", "wrong settings bundle executable")
     require(PREFS + "/Root.plist" in files, "missing settings Root.plist")
-    plistlib.loads(files[LOADER])
+    require(prefs_info.get("CFBundleIdentifier") == "com.82flex.letterpress.preferences"
+            and prefs_info.get("CFBundleDisplayName") == "Letterpress", "wrong preferences identity")
+    loader = plistlib.loads(files[LOADER]).get("entry", {})
+    require(loader.get("label") == "Letterpress" and loader.get("icon") == "icon.png"
+            and loader.get("bundle") == "LetterpressSBPrefs", "wrong settings entry/icon")
+    root_plist = plistlib.loads(files[PREFS + "/Root.plist"])
+    require(root_plist.get("title") == "Letterpress" and root_plist.get("defaults") == "com.82flex.letterpress",
+            "wrong root title or preferences filename/domain")
+    for item in root_plist.get("items", []):
+        if item.get("key"):
+            require(item.get("defaults") == "com.82flex.letterpress", "mixed preference domains")
+    for name, pixels in (("icon.png", 29), ("icon@2x.png", 58), ("icon@3x.png", 87)):
+        icon = files.get(PREFS + "/" + name, b"")
+        require(icon[:8] == b"\x89PNG\r\n\x1a\n" and len(icon) >= 24
+                and struct.unpack(">II", icon[16:24]) == (pixels, pixels), "missing or invalid original-app icon size")
     prefs_report = inspect_macho(files[PREFEXE], preferences=True)
     resources = inspect_resources(files)
     return {"sha256": sha256(data), "bytes": len(data), "control": fields,

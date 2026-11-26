@@ -1,4 +1,4 @@
-# LetterpressSB — RootHide SpringBoard port
+# Letterpress — RootHide SpringBoard port
 
 基于 [owngoal-dev/Letterpress](https://github.com/owngoal-dev/Letterpress) 的实验性 SpringBoard 插件移植。上游源码固定为 `121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8`。保留原版 SwiftUI/Vortex 渲染，提供设置 App 内的偏好页；不是独立 App 重打包，也不是 UIKit 近似重写。
 
@@ -8,7 +8,11 @@
 
 旧 `0.1.0~test1` 经 Linux 工具链构建，在 iOS 16.5.1 / iPhone XS 上的 SpringBoard 首次启动进入安全模式。已有崩溃分析定位到 Swift arm64e 跨 runtime 协议一致性描述符的指针认证问题。因此本仓库不携带任何旧对象、动态库、deb、SDK、工具链或设备崩溃日志。
 
-本次候选沿用原功能源码，目标是使用 **Apple Xcode 16.2** 对主插件、Vortex、DominantColors 和原生桥接完整重编。候选包元数据暂定 `0.1.0~test2`；只有实际 workflow 成功后才可能存在该 deb。未通过构建或验证时，不得将日志或旧包称为修复版。
+test2/test3/test4 已实际使用 Apple Xcode 16.2 构建。用户在 2026-11-26 确认 test4 透明背景、自动出现和中文正常；这些反馈不代表其他边界均已验证。
+
+当前候选为 `0.1.0~test5`，显示名称 **Letterpress**，作者/维护者 **82Flex**，包 ID `com.82flex.letterpress`，偏好域 `com.82flex.letterpress`（同名 `.plist`）。旧 `wiki.qaq.letterpress` 的已知偏好仅迁移缺失键，不覆盖新值；新包声明替换旧 `dev.letterpress.springboard`，避免两个插件同时加载。
+
+本轮恢复原版“字”设置图标、17个滑块描述/当前值/单位、7字体/2分词列表、应用搜索多选、带透明度的四颜色选择与两种原版重置行为。保留原版粒子视图和分词源码。媒体队列同步等待移出主线程并合并重复显隐刷新，作为锁屏再亮屏迟滞的修复候选；没有设备时序数据，不保证已消除延迟。只有该提交的 workflow 成功且下载验包通过后才可交付其新 DEB。
 
 ## 构建
 

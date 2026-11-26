@@ -4,7 +4,7 @@ import CoreText
 
 /// Preferences are deliberately kept out of SpringBoard's standard defaults.
 enum LetterpressPreferences {
-    static let domain = "wiki.qaq.letterpress"
+    static let domain = "com.82flex.letterpress"
     static let reloadNotification = LetterpressNotificationNameNeedsReload
     static let store: UserDefaults = {
         // Both SpringBoard and Settings run as mobile; share one explicit domain.

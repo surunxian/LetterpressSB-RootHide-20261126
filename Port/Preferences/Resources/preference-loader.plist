@@ -7,5 +7,6 @@
     <key>detail</key><string>LPSBRootListController</string>
     <key>isController</key><true/>
     <key>label</key><string>Letterpress</string>
+    <key>icon</key><string>icon.png</string>
   </dict>
 </dict></plist>

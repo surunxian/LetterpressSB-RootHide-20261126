@@ -97,14 +97,22 @@ targets:
     deploymentTarget: "16.0"
     sources:
       - path: Preferences/Sources
+      - path: Sources/LPSBPreferenceMigration.m
       - path: Preferences/Resources/Root.plist
+        buildPhase: resources
+      - path: Preferences/Resources/icon.png
+        buildPhase: resources
+      - path: Preferences/Resources/icon@2x.png
+        buildPhase: resources
+      - path: Preferences/Resources/icon@3x.png
         buildPhase: resources
     settings:
       base:
         PRODUCT_NAME: LetterpressSBPrefs
-        PRODUCT_BUNDLE_IDENTIFIER: dev.letterpress.springboard.preferences
+        PRODUCT_BUNDLE_IDENTIFIER: com.82flex.letterpress.preferences
         EXECUTABLE_NAME: LetterpressSBPrefs
         BUNDLE_EXECUTABLE: LetterpressSBPrefs
+        COMPRESS_PNG_FILES: NO
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: "$(SRCROOT)/Preferences/Resources/Info.plist"
         CLANG_ENABLE_OBJC_ARC: YES
@@ -117,6 +125,7 @@ targets:
     dependencies:
       - sdk: Foundation.framework
       - sdk: UIKit.framework
+      - sdk: CoreFoundation.framework
 schemes:
   LetterpressSB:
     build:

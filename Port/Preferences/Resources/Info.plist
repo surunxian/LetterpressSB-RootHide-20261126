@@ -3,7 +3,9 @@
 <plist version="1.0"><dict>
   <key>CFBundleDevelopmentRegion</key><string>en</string>
   <key>CFBundleExecutable</key><string>LetterpressSBPrefs</string>
-  <key>CFBundleIdentifier</key><string>dev.letterpress.springboard.preferences</string>
+  <key>CFBundleIdentifier</key><string>com.82flex.letterpress.preferences</string>
+  <key>CFBundleDisplayName</key><string>Letterpress</string>
+  <key>CFBundleIconFile</key><string>icon.png</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>CFBundleName</key><string>LetterpressSBPrefs</string>
   <key>CFBundlePackageType</key><string>BNDL</string>

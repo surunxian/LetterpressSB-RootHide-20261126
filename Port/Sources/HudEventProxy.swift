@@ -19,9 +19,19 @@ final class HudEventProxy {
     private var reloadToken: Int32 = -1
     private var colorGeneration = UUID()
     private var isWindowRefreshPending = false
+    // The vendor getters/setter use dispatch_sync on the media queue. Never wait
+    // for that queue in SpringBoard's main-thread lock/wake notification path.
+    private let mediaReadQueue = DispatchQueue(label: "LetterpressSB.media-read", qos: .utility)
+    private var isMediaReadPending = false
+    private var mediaReadRequested = false
+    // Refresh these only at init / the explicit preference notification, not on wake.
+    private var isEnabled = LetterpressPreferences.isEnabled
+    private var displayOnLockScreen = LetterpressPreferences.shouldDisplayOnLockScreen
+    private var displayWhenScreencast = LetterpressPreferences.shouldDisplayWhenScreencast
+    private var adaptiveColorEnabled = LetterpressPreferences.isAdaptiveColorEnabled
 
     private init() {
-        media.isArtworkDecodingRequired = LetterpressPreferences.isAdaptiveColorEnabled
+        setArtworkDecodingRequired(adaptiveColorEnabled)
         let center = NotificationCenter.default
         observers.append(center.addObserver(forName: NSNotification.Name("LPSBMediaObserverDidChangeNotification"), object: media, queue: .main) { [weak self] _ in
             self?.mediaDidChange()
@@ -32,28 +42,58 @@ final class HudEventProxy {
         reloadToken = LPSBNotifyCenter.registerName(LetterpressNotificationNameNeedsReload) { [weak self] in
             guard let self else { return }
             LetterpressPreferences.store.synchronize()
-            self.media.isArtworkDecodingRequired = LetterpressPreferences.isAdaptiveColorEnabled
+            self.isEnabled = LetterpressPreferences.isEnabled
+            self.displayOnLockScreen = LetterpressPreferences.shouldDisplayOnLockScreen
+            self.displayWhenScreencast = LetterpressPreferences.shouldDisplayWhenScreencast
+            let adaptive = LetterpressPreferences.isAdaptiveColorEnabled
+            if self.adaptiveColorEnabled != adaptive {
+                self.adaptiveColorEnabled = adaptive
+                self.setArtworkDecodingRequired(adaptive)
+            }
+            if !adaptive {
+                // Invalidate before clearing, including a reload while already off.
+                self.colorGeneration = UUID()
+                if self.nowPlayingArtworkColors.value != nil { self.nowPlayingArtworkColors.send(nil) }
+            }
             self.updateVisibility()
             self.requestWindowRefresh()
         }
-        observers.append(center.addObserver(forName: UIScreen.capturedDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
-            self?.updateVisibility()
-            LPSBOverlayHost.refreshVisibility()
-        })
-        observers.append(center.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
-            self?.updateVisibility()
+        // Capture changes are already observed by LPSBOverlayHost before this
+        // singleton is created. Keep one policy evaluation per capture event.
+        observers.append(center.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: .main) { _ in
             LPSBOverlayHost.refreshVisibility()
         })
         mediaDidChange()
         updateVisibility()
     }
 
+    private func setArtworkDecodingRequired(_ required: Bool) {
+        mediaReadQueue.async { [media] in
+            media.isArtworkDecodingRequired = required
+        }
+    }
+
     private func mediaDidChange() {
-        isNowPlaying.send(media.isNowPlaying)
-        nowPlayingApp.send(media.nowPlayingApp)
-        nowPlayingSubtitle.send(media.nowPlayingSubtitle)
-        updateVisibility()
-        requestWindowRefresh()
+        // One in-flight read and one dirty bit, not one queued job per event.
+        guard !isMediaReadPending else { mediaReadRequested = true; return }
+        isMediaReadPending = true
+        mediaReadQueue.async { [weak self, media] in
+            let playing = media.isNowPlaying
+            let app = media.nowPlayingApp
+            let subtitle = media.nowPlayingSubtitle
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.isMediaReadPending = false
+                if self.isNowPlaying.value != playing { self.isNowPlaying.send(playing) }
+                if self.nowPlayingApp.value != app { self.nowPlayingApp.send(app) }
+                if self.nowPlayingSubtitle.value != subtitle { self.nowPlayingSubtitle.send(subtitle) }
+                self.requestWindowRefresh()
+                if self.mediaReadRequested {
+                    self.mediaReadRequested = false
+                    self.mediaDidChange()
+                }
+            }
+        }
     }
 
     private func requestWindowRefresh() {
@@ -71,7 +111,7 @@ final class HudEventProxy {
     private func artworkDidChange() {
         colorGeneration = UUID()
         let generation = colorGeneration
-        guard LetterpressPreferences.isAdaptiveColorEnabled, let image = media.nowPlayingArtwork else {
+        guard adaptiveColorEnabled, let image = media.nowPlayingArtwork else {
             nowPlayingArtworkColors.send(nil)
             return
         }
@@ -79,19 +119,24 @@ final class HudEventProxy {
             let colors = (try? image.dominantColors(max: 4))?.map(Color.init)
             DispatchQueue.main.async {
                 guard let self, self.colorGeneration == generation,
-                      LetterpressPreferences.isAdaptiveColorEnabled else { return }
+                      self.adaptiveColorEnabled else { return }
                 self.nowPlayingArtworkColors.send(colors.map { $0 + [.clear.opacity(0)] })
             }
         }
     }
 
     func updateVisibility() {
+        // A blank screen can only hide; showing still requires every live safety check.
+        if LPSBEnvironment.isScreenBlanked() {
+            if isHudVisible.value { isHudVisible.send(false) }
+            return
+        }
         let locked = LPSBEnvironment.isLocked()
-        let allowedByLock = !locked || LetterpressPreferences.shouldDisplayOnLockScreen
-        let allowedByCapture = !LPSBEnvironment.isScreenCaptured() || LetterpressPreferences.shouldDisplayWhenScreencast
-        let visible = LetterpressPreferences.isEnabled && LPSBEnvironment.isLockStateKnown() && allowedByLock &&
-            !LPSBEnvironment.isScreenBlanked() && !LPSBEnvironment.isLandscape() && allowedByCapture
-        isHudVisible.send(visible)
+        let allowedByLock = !locked || displayOnLockScreen
+        let allowedByCapture = !LPSBEnvironment.isScreenCaptured() || displayWhenScreencast
+        let visible = isEnabled && LPSBEnvironment.isLockStateKnown() && allowedByLock &&
+            !LPSBEnvironment.isLandscape() && allowedByCapture
+        if isHudVisible.value != visible { isHudVisible.send(visible) }
     }
 }
 

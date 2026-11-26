@@ -96,8 +96,8 @@ def main():
         info_path = RESOURCES + "/Info.plist"
         if info_path not in files:
             files[info_path] = plistlib.dumps({
-                "CFBundleIdentifier": "dev.letterpress.springboard.resources",
-                "CFBundleName": "LetterpressSB",
+                "CFBundleIdentifier": "com.82flex.letterpress.resources",
+                "CFBundleName": "Letterpress",
                 "CFBundlePackageType": "BNDL",
                 "CFBundleVersion": "1",
                 "CFBundleShortVersionString": "0.1.0",
@@ -123,7 +123,7 @@ def main():
         ], epoch)
         report = inspect_deb(package, control)
         output_dir.mkdir(parents=True, exist_ok=True)
-        name = f"LetterpressSB_{fields['Version']}_iphoneos-arm64e.deb"
+        name = f"com.82flex.letterpress_{fields['Version']}_iphoneos-arm64e.deb"
         target = output_dir / name
         temporary = target.with_suffix(".deb.tmp")
         temporary.write_bytes(package)
