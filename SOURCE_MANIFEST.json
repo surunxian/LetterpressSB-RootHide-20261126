@@ -1,7 +1,7 @@
 {
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
-  "status": "prepared source; no Apple build yet",
+  "status": "Apple cloud build iteration; not device-tested",
   "files": [
     {
       "path": "Port/Sources/Hashable+Combines.swift",
@@ -236,8 +236,8 @@
     },
     {
       "path": "Port/Build/prepare_apple_vortex.py",
-      "bytes": 4389,
-      "sha256": "f6790799abd5e9e0bbea5ac4cb681e22042fe8bb1c2289effb26394bda7173d2"
+      "bytes": 4643,
+      "sha256": "1bba4dc657d5925cf134ab636282dfaf71114c513704cc05115cf586b6a9b1dc"
     },
     {
       "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",

@@ -41,6 +41,10 @@ if not a.stage_only:
    require(not any(x.is_symlink() for x in f.rglob('*')),'Symlinks in dependency source are forbidden')
    shutil.copytree(f,local/name)
   else:shutil.copy2(f,local/name)
+ # SwiftPM checkouts are intentionally read-only. Only make our isolated copy writable.
+ for copied in local.rglob('*'):
+  if copied.is_dir():copied.chmod(copied.stat().st_mode | 0o700)
+  elif copied.is_file():copied.chmod(copied.stat().st_mode | 0o600)
  manifest=local/'Package.swift';original=manifest.read_text()
  old='.target(\n            name: "Vortex"),'
  require(original.count(old)==1,'Unrecognised Vortex package manifest; no broad patch permitted')
