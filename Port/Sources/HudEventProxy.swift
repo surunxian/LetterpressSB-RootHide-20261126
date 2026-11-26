@@ -2,6 +2,7 @@ import Combine
 import DominantColors
 import SwiftUI
 import UIKit
+import Vortex
 
 /// SpringBoard-safe replacement for the TrollStore HUD's app-delegate proxy.
 final class HudEventProxy {
@@ -140,8 +141,23 @@ final class HudEventProxy {
     }
 }
 
-final class HudViewController: UIHostingController<HudContentView> {
-    init() { super.init(rootView: HudContentView()) }
+// Keep the original visual views and their state alive, but never run a hidden
+// Canvas timeline. Visibility remains governed by the unchanged native policy.
+private struct LPSBRootView: View {
+    @ObservedObject private var vm = HudViewModel.shared
+    @State private var isPolicyVisible = false
+
+    var body: some View {
+        HudContentView()
+            .environment(\.lpsbVortexRenderingPaused, !isPolicyVisible || !vm.isActivated)
+            .onReceive(HudEventProxy.shared.isHudVisible.removeDuplicates()) { visible in
+                isPolicyVisible = visible
+            }
+    }
+}
+
+private final class HudViewController: UIHostingController<LPSBRootView> {
+    init() { super.init(rootView: LPSBRootView()) }
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     override func viewDidLoad() {

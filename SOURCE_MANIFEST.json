@@ -2,7 +2,7 @@
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
   "baseline_test4": "3f57e86a5381b9a9edccf389a23527ed56c5f640",
-  "status": "test6 candidate: native slider path; retained renderer on lock; rounded icon; no nine-app preset; trimmed settings footer; device verification required",
+  "status": "test7 candidate: explicit hidden renderer pause; hidden bursts suppressed; bounded discontinuous frame delta; device physical-wake verification required",
   "files": [
     {
       "path": ".github/workflows/apple-build.yml",
@@ -13,6 +13,11 @@
       "path": ".gitignore",
       "bytes": 84,
       "sha256": "4ca12294339c5b1719e34fb3179fc535b13a88bbc6c2e00f98ce705dc1d0408b"
+    },
+    {
+      "path": "Port/Build/adapt_vortex_lifecycle.py",
+      "bytes": 4108,
+      "sha256": "f5ab2881d2de78dd7610fde489aa6fb71c98533f5a675879a8a2e90ca0e32d26"
     },
     {
       "path": "Port/Build/build_macos.sh",
@@ -36,8 +41,8 @@
     },
     {
       "path": "Port/Build/prepare_apple_vortex.py",
-      "bytes": 4643,
-      "sha256": "1bba4dc657d5925cf134ab636282dfaf71114c513704cc05115cf586b6a9b1dc"
+      "bytes": 4780,
+      "sha256": "4df54b6f31829dd31cf928805a1a9b831c7b007bf603dc0e62811103acbdda26"
     },
     {
       "path": "Port/Build/verify.py",
@@ -161,8 +166,8 @@
     },
     {
       "path": "Port/Sources/HudEventProxy.swift",
-      "bytes": 8117,
-      "sha256": "70761c2a703d296e3410f1a162e60ae4a488d04be54e3319da29ba2abb2e3208"
+      "bytes": 8733,
+      "sha256": "d83f7e1afcc493384bb7bc6cf479c9e4f135dc4b98155ade11a64cbdc9a9a8ab"
     },
     {
       "path": "Port/Sources/HudFirefliesView.swift",
@@ -267,7 +272,7 @@
     {
       "path": "Port/control",
       "bytes": 444,
-      "sha256": "3544dabc4af3255fa71d07cf612e1b6178b9fcfa5924cce6e9bd98559b621dd4"
+      "sha256": "27666ab9385549acf90e4dc39f63ff9049776582abe6001a91d0ce6266d6b5ae"
     },
     {
       "path": "Port/project.yml",
@@ -276,8 +281,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 3963,
-      "sha256": "55399b4c40bc572c7e7630f36bcfc65a1f157b5f3b6fbadc3e515e0063dcb5b2"
+      "bytes": 4382,
+      "sha256": "eb9689d31f54e18232851745ccce3679c47e38e31f10e299d5d66917fcf75731"
     },
     {
       "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",
@@ -290,5 +295,6 @@
       "sha256": "5ecac440fbe9e244840edb76b386403bfc0384f229383959c2a3423319bf0e5d"
     }
   ],
-  "baseline_test5": "0e287074fd9d6f928ed702344ba91743d58fdaf9"
+  "baseline_test5": "0e287074fd9d6f928ed702344ba91743d58fdaf9",
+  "baseline_test6": "0ba7b2f3c01f8cac29f0ec5080e1f88bf2c247c3"
 }
