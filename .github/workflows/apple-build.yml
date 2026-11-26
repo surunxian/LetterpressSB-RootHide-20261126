@@ -46,8 +46,9 @@ jobs:
         run: |
           set -euo pipefail
           sudo xcode-select --switch "$DEVELOPER_DIR"
-          sudo /usr/bin/xcodebuild -runFirstLaunch
-          /usr/bin/xcodebuild -checkFirstLaunchStatus
+          # runner-images#12758: initialize CoreSimulator before downloading old runtimes.
+          /usr/bin/xcrun simctl list > /dev/null
+          /usr/bin/xcodebuild -downloadPlatform iOS -buildVersion 18.2
 
       - name: Install pinned XcodeGen without Homebrew drift
         shell: bash
