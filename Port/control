@@ -1,6 +1,6 @@
 Package: dev.letterpress.springboard
 Name: LetterpressSB
-Version: 0.1.0~test2
+Version: 0.1.0~test3
 Architecture: iphoneos-arm64e
 Description: Experimental SpringBoard SwiftUI port of Letterpress; device compatibility unverified.
 Maintainer: LetterpressSB Port Contributors

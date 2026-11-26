@@ -130,8 +130,8 @@
     },
     {
       "path": "Port/Preferences/Sources/LPSBRootListController.m",
-      "bytes": 581,
-      "sha256": "72463252b2fad8dfe4bceba59f195a53fe24c65d58dcffa593aa1fc432996651"
+      "bytes": 660,
+      "sha256": "fd2fe7c11c839536a49b06091993405d50f9ef5c4cd22b24b5790af460eeb477"
     },
     {
       "path": "Port/Resources/ChillBitmapSE_7px.ttf",
@@ -201,7 +201,7 @@
     {
       "path": "Port/control",
       "bytes": 333,
-      "sha256": "abdd609e19add8eb6c202d7b4b5001ce922a11dec678aa8a6da1f4474fb85d40",
+      "sha256": "a1adbace2ca6f66aea94edacc746c1f66f1647003ae71832a8f524f23235b903",
       "note": "candidate metadata only; not built or device-tested"
     },
     {
