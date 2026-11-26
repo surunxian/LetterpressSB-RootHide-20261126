@@ -211,8 +211,8 @@
     },
     {
       "path": "Port/Build/build_macos.sh",
-      "bytes": 5245,
-      "sha256": "cf21b76201698601a41bb1fe25e333bc459801d84912a3939ec3216b7f0298fe"
+      "bytes": 5209,
+      "sha256": "084a6d62f195f1c1860d8ffab5b7a06d3ab201da6aee6cd6646f2f7e9c6674fb"
     },
     {
       "path": "Port/Build/package.py",

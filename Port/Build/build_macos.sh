@@ -73,7 +73,7 @@ xcodebuild -resolvePackageDependencies \
 
 xcodebuild build \
   -project "$PROJECT" -scheme LetterpressSB \
-  -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+  -configuration Release -sdk iphoneos \
   -derivedDataPath "$OUT/derived" \
   -clonedSourcePackagesDirPath "$OUT/SourcePackages" \
   ARCHS="arm64 arm64e" ONLY_ACTIVE_ARCH=NO \
