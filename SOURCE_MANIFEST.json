@@ -2,7 +2,7 @@
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
   "baseline_test4": "3f57e86a5381b9a9edccf389a23527ed56c5f640",
-  "status": "test8+isolate1 empty-content same-window validation; not a proven fix; no lyric/particle display; device validation pending",
+  "status": "test8+isolate2 original auxiliary-label content; no mounted Vortex particle view; not a proven fix; target-device validation pending",
   "files": [
     {
       "path": ".github/workflows/apple-build.yml",
@@ -92,7 +92,7 @@
     {
       "path": "Port/Preferences/Sources/LPSBWakeDiagnosticsController.m",
       "bytes": 27489,
-      "sha256": "5c48ec151f331ac0574952f57c94d45810ca593d811a44ce4d316ba059675099"
+      "sha256": "5032843e35ab13db8eed8c5c271ea8dd6f1239ae8c0521b696671fbd09015281"
     },
     {
       "path": "Port/Resources/ChillBitmapSE_7px.ttf",
@@ -181,13 +181,13 @@
     },
     {
       "path": "Port/Sources/HudFirefliesView.swift",
-      "bytes": 7011,
-      "sha256": "efa5684d0a20de4a5cb0e9a08f9ba495f932b38d6150c10374017e0d4fb79493"
+      "bytes": 6447,
+      "sha256": "9b9fa5f7e9e32eb38974a37b8f9cc9cc8c51027db323b3b9a623b166f52232e1"
     },
     {
       "path": "Port/Sources/HudViewController.swift",
-      "bytes": 658,
-      "sha256": "fe8b265ebcda6e2c5a79ae42c4bd7896530697f41f54cb1d6e7556c4f54edec1"
+      "bytes": 519,
+      "sha256": "31c05ab6858ba5545f2435e0593af367d4be0a469e46733562cd773a7ca9cd1a"
     },
     {
       "path": "Port/Sources/HudViewModel.swift",
@@ -227,12 +227,12 @@
     {
       "path": "Port/Sources/LPSBWakeDiagnostics.h",
       "bytes": 4005,
-      "sha256": "96c6fa4e489e22cd05dd33042f666beada7922eb98e8ceb0419f61c227821ff0"
+      "sha256": "ca37599536a93aaddaa54123aa9eb0522a47a2c85663c30f5931e73283b9a45e"
     },
     {
       "path": "Port/Sources/LPSBWakeDiagnostics.mm",
       "bytes": 52895,
-      "sha256": "d11f6b6d1bb4651d10d02b2de0352422cce1cfc5d01bd35614ea8a356fe839bf"
+      "sha256": "c883720a59eb8738d44dedcf513ae8e0440ee5650e21e2b8f1708d2999436930"
     },
     {
       "path": "Port/Sources/LetterpressPreferences.swift",
@@ -317,7 +317,7 @@
     {
       "path": "Port/control",
       "bytes": 453,
-      "sha256": "f9d1bbc7259c86f5807ead0eef5583364110f9f484b3caf13185e80a0c5dbebd"
+      "sha256": "a3bb54013e7f252f1eabd60ca714333ff07d5b439dbdb93be3393495c89f3855"
     },
     {
       "path": "Port/project.yml",
@@ -326,8 +326,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 9033,
-      "sha256": "e1d307549cf0e50c1c4c3631e3fe7b7438affa9c2447a3e13e6ef0b56543cd7f"
+      "bytes": 9773,
+      "sha256": "f22f15894d0b9e8ad1c4058b95eda25cb318b069df948f312bc07b54896c85a7"
     },
     {
       "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",
@@ -367,5 +367,7 @@
   "baseline_test8": "0b3d762c82fa92aee998523df75e1134567a83f5",
   "baseline_diagnostic1": "fc9bcf24e990bc063696d5c561657373a8a397c5",
   "baseline_diagnostic2": "62d3abcb64f7297121df8b8980ed0921a63827e4",
-  "controlled_change": "UIHostingController<HudContentView> to UIHostingController<Color> with Color.clear; media/VM and secure window containment unchanged"
+  "controlled_change": "Restore original hosted HudContentView and text/container; remove only VortexViewReader particle mount; VortexSystem state init, VM/media/secure-window/SBS/user settings unchanged",
+  "baseline_isolation1": "0da9aa5d75d11c29ef6cf7467ba51da11b501595",
+  "test_requirement": "Enable existing isLabelEnabled auxiliary-label switch and confirm real text before capture; do not change persisted defaults automatically"
 }

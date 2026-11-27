@@ -81,21 +81,8 @@ struct HudFirefliesView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                if vm.birthRate > 1e-3 || vm.burstCount > 0 {
-                    VortexViewReader { proxy in
-                        particleBody
-                            .onAppear { reloadAttributes(geometry: geometry, proxy: proxy) }
-                            .onChange(of: attributesHash) { _ in
-                                reloadAttributes(geometry: geometry, proxy: proxy)
-                            }
-                            .onChange(of: vm.content) { _ in
-                                if vm.burstCount > 0 {
-                                    proxy.burst()
-                                }
-                            }
-                    }
-                    .transition(.opacity)
-                }
+                // Isolation-only: do not mount the Vortex particle view subtree.
+                // Preserve the original label, container, model and user settings.
 
 #if DEBUG
                 Capsule()

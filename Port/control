@@ -1,6 +1,6 @@
 Package: com.82flex.letterpress
 Name: Letterpress
-Version: 0.1.0~test8+isolate1
+Version: 0.1.0~test8+isolate2
 Architecture: iphoneos-arm64e
 Description: Letterpress live typography with the original SwiftUI and Vortex renderer, adapted for SpringBoard.
 Author: 82Flex

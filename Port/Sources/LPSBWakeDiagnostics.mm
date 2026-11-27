@@ -609,7 +609,7 @@ static NSMutableDictionary *Report(NSString *status, bool full) {
 #endif
     uint64_t end = gTicket.load(std::memory_order_relaxed);
     uint64_t requested = end >= gStartTicket ? end - gStartTicket : 0;
-    return [@{@"schema":@2, @"build":@"0.1.0~test8+isolate1", @"requestID":gRequestID ?: @"",
+    return [@{@"schema":@2, @"build":@"0.1.0~test8+isolate2", @"requestID":gRequestID ?: @"",
         @"status":status, @"startedAtUnix":@(gStartUnix), @"endedAtUnix":@(gEndUnix),
         @"duration":@(gStart ? NS(now - gStart) / (double)kSecond : 0),
         @"events":full ? EventsJSON() : @[], @"samples":full ? SamplesJSON() : @[],
