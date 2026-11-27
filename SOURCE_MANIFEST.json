@@ -2,7 +2,7 @@
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
   "baseline_test4": "3f57e86a5381b9a9edccf389a23527ed56c5f640",
-  "status": "test8 original-first restoration candidate; original four-way activation/throttle, root/container/screenshot chain and unmodified Vortex source; not device verified",
+  "status": "test8+diag1 diagnostic-only candidate; no rendering/window-policy changes; device validation pending",
   "files": [
     {
       "path": ".github/workflows/apple-build.yml",
@@ -56,8 +56,8 @@
     },
     {
       "path": "Port/Preferences/Resources/Root.plist",
-      "bytes": 22610,
-      "sha256": "1338db031483e0a882a72d4e7980de0b76346d07f870ed18312e543011df8fa7"
+      "bytes": 23288,
+      "sha256": "3ebc32b8da666749f9ea22b211b55523598be8cd1654bfa59f7aad8ea242cefd"
     },
     {
       "path": "Port/Preferences/Resources/icon.png",
@@ -88,6 +88,11 @@
       "path": "Port/Preferences/Sources/LPSBRootListController.m",
       "bytes": 5300,
       "sha256": "fc2c98e3bcb8818043f5c40353f8fd8e6e881ac4a910ceef6d3b56f691b40f7a"
+    },
+    {
+      "path": "Port/Preferences/Sources/LPSBWakeDiagnosticsController.m",
+      "bytes": 26940,
+      "sha256": "80b4068ec3cf69d37d0abbef9a2b57a4bd8a5220d5193e7426cb2a01b303d58d"
     },
     {
       "path": "Port/Resources/ChillBitmapSE_7px.ttf",
@@ -206,8 +211,8 @@
     },
     {
       "path": "Port/Sources/LPSBOverlayHost.mm",
-      "bytes": 17116,
-      "sha256": "10b4a6ede954edbf8e4d246e5740ee9f0f49644fb6ea35f585a2d6f917047e03"
+      "bytes": 18241,
+      "sha256": "45e7a8bda48283c5b7d2555e2913e100061ae4b6035c1a296507a3510f519565"
     },
     {
       "path": "Port/Sources/LPSBPreferenceMigration.m",
@@ -218,6 +223,16 @@
       "path": "Port/Sources/LPSBRootViewController.swift",
       "bytes": 2739,
       "sha256": "3586002cd1910f651e9e9419681564d0e360160e604cbf2ee6a15b002d5c0673"
+    },
+    {
+      "path": "Port/Sources/LPSBWakeDiagnostics.h",
+      "bytes": 3863,
+      "sha256": "9adc6cc4362db3869bc8ea9b17d1a4650e940adab7a7dafa709f99d0cc78a16b"
+    },
+    {
+      "path": "Port/Sources/LPSBWakeDiagnostics.mm",
+      "bytes": 33466,
+      "sha256": "1352d4e7473aedd70bda0624f391e88c4c8165819b0122827fea23b8585ee91b"
     },
     {
       "path": "Port/Sources/LetterpressPreferences.swift",
@@ -301,8 +316,8 @@
     },
     {
       "path": "Port/control",
-      "bytes": 444,
-      "sha256": "4d584e698f778fdef09eaf6dc90fc9471c130f939e93010ed0bf0aeaf1aeefdd"
+      "bytes": 450,
+      "sha256": "63ec6403a598850ebb4dacd889f563d43be9eb992eb7d6c49a876ac2e4338123"
     },
     {
       "path": "Port/project.yml",
@@ -311,8 +326,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4757,
-      "sha256": "35751eb58da4b2edb35df59e9d4b720aff80752ddca8774ec56920458003f27d"
+      "bytes": 6496,
+      "sha256": "1c84cc4adced45aaa00eb439c8a7c94219d95ca5dd8e9ea5020c52943e2cff08"
     },
     {
       "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",
@@ -333,5 +348,6 @@
     "Asynchronous media bridge and fail-closed lock/blank policy remain host adaptations",
     "App-list alphabetical index/search highlighting not yet restored; original AltList visible classification not proven equivalent",
     "Physical wake latency, screenshot privacy, rotation geometry and device behavior not verified"
-  ]
+  ],
+  "baseline_test8": "0b3d762c82fa92aee998523df75e1134567a83f5"
 }

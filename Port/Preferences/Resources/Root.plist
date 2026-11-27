@@ -859,6 +859,24 @@
 			<key>footerText</key>
 			<string>作者：82Flex。基于 Lessica 的 Letterpress（MIT 许可证）移植。</string>
 		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>test8 诊断版（非修复版）</string>
+			<key>footerText</key>
+			<string>仅手动开始后进行最多 90 秒观察。开始后去播放器放歌，锁屏 30 秒，亮屏返回诊断页停止并导出。不自动修改设备或既有偏好；采样有少量开销，不保证捕获根因，请避免连续长开。</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>label</key>
+			<string>唤醒采样与导出诊断</string>
+			<key>detail</key>
+			<string>LPSBWakeDiagnosticsController</string>
+			<key>isController</key>
+			<true/>
+		</dict>
 	</array>
 </dict>
 </plist>
