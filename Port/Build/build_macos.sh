@@ -61,7 +61,7 @@ xcodebuild -resolvePackageDependencies \
   -clonedSourcePackagesDirPath "$OUT/SourcePackages" \
   -derivedDataPath "$OUT/derived"
 
-# Adapt an isolated copy of the pinned Vortex package, not upstream renderer files.
+# Adapt resources and suppress exactly one draw call in an isolated pinned Vortex copy.
 python3 "$SCRIPT_DIR/prepare_apple_vortex.py" \
   --source-packages "$OUT/SourcePackages" \
   --local-package "$OUT/local-packages/Vortex" --project-spec "$ROOT/project.yml"

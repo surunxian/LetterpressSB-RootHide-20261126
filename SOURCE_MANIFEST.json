@@ -2,7 +2,7 @@
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
   "baseline_test4": "3f57e86a5381b9a9edccf389a23527ed56c5f640",
-  "status": "test8+isolate3 full original particle branch; Vortex targetFrameRate 30fps single-variable device comparison; not a proven fix",
+  "status": "test8+isolate4 whole-test per-particle draw isolation; Canvas/update retained in source; no particles expected; not a proven wake fix",
   "files": [
     {
       "path": ".github/workflows/apple-build.yml",
@@ -15,9 +15,14 @@
       "sha256": "4ca12294339c5b1719e34fb3179fc535b13a88bbc6c2e00f98ce705dc1d0408b"
     },
     {
+      "path": "Port/Build/adapt_vortex_draw_isolation.py",
+      "bytes": 2856,
+      "sha256": "1cec5bc01f14e22ad8e634eaa9e8550da772d2bb65e265bb48ddf94717abeb74"
+    },
+    {
       "path": "Port/Build/build_macos.sh",
-      "bytes": 5743,
-      "sha256": "32395263add7aa13f73d2cd620884643e9e2067c8a52aef714586052e17b447e"
+      "bytes": 5747,
+      "sha256": "2f9cc48e622aee27b74e0ac4a4387686b5dff669e9ebbf96696376d5d780fff8"
     },
     {
       "path": "Port/Build/macho_codesign.py",
@@ -36,8 +41,8 @@
     },
     {
       "path": "Port/Build/prepare_apple_vortex.py",
-      "bytes": 5068,
-      "sha256": "0b7bbe446eacc73ff4343e2abca045c12393d47f884f2b61b9df157a36168e81"
+      "bytes": 5312,
+      "sha256": "fcc6484846f7b395abe8030b2d2fd8cd7b5b9ab609fb4f4f49c3e36c812332ef"
     },
     {
       "path": "Port/Build/verify.py",
@@ -92,7 +97,7 @@
     {
       "path": "Port/Preferences/Sources/LPSBWakeDiagnosticsController.m",
       "bytes": 27489,
-      "sha256": "65cccff6a05cbb404b89d47c2feb144aabc40dd54ec5c8a9e7289914c90882b9"
+      "sha256": "f81d5fad42e82b08833a71a19a8ec616cc11742881a2c39dcd50dc99b2722c35"
     },
     {
       "path": "Port/Resources/ChillBitmapSE_7px.ttf",
@@ -227,12 +232,12 @@
     {
       "path": "Port/Sources/LPSBWakeDiagnostics.h",
       "bytes": 4005,
-      "sha256": "1cf458f55e7b89f09c87e7671a8a6a472595c6c4e958543a183366e21cd67f76"
+      "sha256": "c5409431920d55e74ad81a9eb8a45c53f1021ab80612f01834f3c90845e94b7a"
     },
     {
       "path": "Port/Sources/LPSBWakeDiagnostics.mm",
       "bytes": 52895,
-      "sha256": "44d510a1ea6d02651a1ee3f56001e291fa9a53d18da0230c903e988a54b1c0be"
+      "sha256": "a57128e6d61bae2dd0b5811e2ff766e25e414d27763d57ab7d08291bd603d5c4"
     },
     {
       "path": "Port/Sources/LetterpressPreferences.swift",
@@ -317,7 +322,7 @@
     {
       "path": "Port/control",
       "bytes": 453,
-      "sha256": "8da9e3bec8ccad1ef9ed41dd9632f4f0e13fabaac7a8beef361e283304e3338a"
+      "sha256": "60f70b0769b8d1bd0cbf161c2416e0de7ec2847a7e69611cd0ba010750895517"
     },
     {
       "path": "Port/project.yml",
@@ -326,8 +331,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 7596,
-      "sha256": "1742702c462e873c47c89cd5afc486ca6bae233f0475e6400e207d2cb56dc402"
+      "bytes": 3503,
+      "sha256": "e2785617f1a0cc5261b21535ef0ab85c8014550ea6b4e2aeb29f6818423071a4"
     },
     {
       "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",
@@ -367,6 +372,7 @@
   "baseline_test8": "0b3d762c82fa92aee998523df75e1134567a83f5",
   "baseline_diagnostic1": "fc9bcf24e990bc063696d5c561657373a8a397c5",
   "baseline_test8_diag2_commit": "62d3abcb64f7297121df8b8980ed0921a63827e4",
-  "controlled_change": "Only change VortexView targetFrameRate from its default 60 to 30 in the original particle branch; diagnostic build identifiers bumped for report compatibility; all other source files frozen.",
-  "test_requirement": "Compare with the same playing track and two lock/wake cycles; report visible lyrics, particle smoothness, and whole-screen wake delay. Existing isolate2 requires no new report unless delay recurs."
+  "controlled_change": "Only omit the primary per-particle draw call in a private pinned VortexView source; keep Timeline/Canvas/update and all HUD/window/media/user preferences unchanged. Retain isolate3 target30. Version strings updated only for identity.",
+  "test_requirement": "Confirm actual auxiliary lyrics, no particles expected, same track/settings, two lock5-10s/wake cycles. Report whole-screen delay; no repeated diagnostic export requested. Empty Canvas can alter actual scheduling; source retention is not cadence proof.",
+  "baseline_isolate3_commit": "5e76dda8b9b68a5ff7b4c8288d3789a9d6110206"
 }
