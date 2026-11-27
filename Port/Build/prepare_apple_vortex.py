@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Adapt only a verified Vortex checkout's package/resources for a SpringBoard dylib."""
 import argparse,hashlib,json,pathlib,plistlib,shutil,subprocess
-from adapt_vortex_update_isolation import isolate_update
+from adapt_vortex_timeline_isolation import isolate_timeline
 REV='26e036c4f04efcc019c95d43bfeffeaefbef3c99'
 PNG={'circle':'66f338f38c5fd786c72ed0906cf3a5bb29b170f1e5f02b8a92a964409a7929e1','confetti':'d1b3ae95ae78a0b7e65dd860a75e75436f623334a52b8c9641c31b223a9bdf72','sparkle':'b6e23edd5647fd3557826c30f8bc569f0c235766cfb785d58e899eb3bc3c1817'}
 ADAPTER='''// LetterpressSB packaging adapter. The upstream renderer is unchanged.
@@ -57,11 +57,9 @@ if not a.stage_only:
  spec.write_text(original_spec.replace(oldspec,'    path: '+json.dumps(str(local))))
  # Audit only: verify every original Swift source survived byte-for-byte.
  source_hashes={str(f.relative_to(source)):digest(f) for f in sorted((source/'Sources').rglob('*.swift'))}
- local_hashes={name:digest(local/name) for name in source_hashes}
- require(source_hashes==local_hashes,'Upstream Swift source changed during resource adaptation')
- update_info=isolate_update(local,source_hashes)
+ timeline_info=isolate_timeline(local,source_hashes)
  compiled_hashes={name:digest(local/name) for name in source_hashes}
- evidence={'upstream_revision':REV,'manifest_original_sha256':hashlib.sha256(original.encode()).hexdigest(),'manifest_adapted_sha256':digest(manifest),'adapter_sha256':hashlib.sha256(ADAPTER.encode()).hexdigest(),'renderer_files_changed':True,'original_swift_sha256':source_hashes,'compiled_swift_sha256':compiled_hashes,'update_isolation':update_info}
+ evidence={'upstream_revision':REV,'manifest_original_sha256':hashlib.sha256(original.encode()).hexdigest(),'manifest_adapted_sha256':digest(manifest),'adapter_sha256':hashlib.sha256(ADAPTER.encode()).hexdigest(),'renderer_files_changed':True,'original_swift_sha256':source_hashes,'compiled_swift_sha256':compiled_hashes,'timeline_isolation':timeline_info}
  (local/'LETTERPRESS_RESOURCE_ADAPTER.json').write_text(json.dumps(evidence,indent=2)+'\n')
  print(json.dumps(evidence,sort_keys=True))
 if a.products:

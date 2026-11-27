@@ -2,7 +2,7 @@
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
   "baseline_test4": "3f57e86a5381b9a9edccf389a23527ed56c5f640",
-  "status": "test8+isolate5 update-call isolation on restored full/default60 baseline; not a proven wake fix",
+  "status": "test8+isolate6 one-entry Timeline schedule isolation from full diag2/default60; not a proven wake fix",
   "files": [
     {
       "path": ".github/workflows/apple-build.yml",
@@ -15,9 +15,9 @@
       "sha256": "4ca12294339c5b1719e34fb3179fc535b13a88bbc6c2e00f98ce705dc1d0408b"
     },
     {
-      "path": "Port/Build/adapt_vortex_update_isolation.py",
-      "bytes": 2350,
-      "sha256": "936786ca2810c95e084967077e491e02e5ef79865315ec50745b31cf57a65b5c"
+      "path": "Port/Build/adapt_vortex_timeline_isolation.py",
+      "bytes": 3913,
+      "sha256": "c1df9154fba8e1e02adcc9c291e38fc5f2c51b656318c9396bbcd066f8bab578"
     },
     {
       "path": "Port/Build/build_macos.sh",
@@ -41,8 +41,8 @@
     },
     {
       "path": "Port/Build/prepare_apple_vortex.py",
-      "bytes": 5314,
-      "sha256": "d86d4e2616d351ce34d694d334b6cd5746aa82b3101f7f22efe707820577548a"
+      "bytes": 5163,
+      "sha256": "c6104307367af2f013baf5af25897b9476f3ff357fbd66d587bdcecc151f893d"
     },
     {
       "path": "Port/Build/verify.py",
@@ -97,7 +97,7 @@
     {
       "path": "Port/Preferences/Sources/LPSBWakeDiagnosticsController.m",
       "bytes": 27489,
-      "sha256": "d6da620b58ec7d5e455f2486b2003dc8b6cb4d2331e91c466130a0f1340a05f6"
+      "sha256": "6c81b7b5b1dc01a8d501552dc4ac18add6542e9a4966a9617ec79c6b6b3c6f92"
     },
     {
       "path": "Port/Resources/ChillBitmapSE_7px.ttf",
@@ -232,12 +232,12 @@
     {
       "path": "Port/Sources/LPSBWakeDiagnostics.h",
       "bytes": 4005,
-      "sha256": "dab7f348f8af64894795826b7b08bfbad2bfde802a65bc4c3f014fa66bc893cd"
+      "sha256": "7f90a1565b1e31442163410f927ecb0120966ead6c483ccc5a6b59ceef6319bc"
     },
     {
       "path": "Port/Sources/LPSBWakeDiagnostics.mm",
       "bytes": 52895,
-      "sha256": "8b510467ff5470f6f75ffced347775e82c8a2241ba5c538d4f60a8f240dbf2f5"
+      "sha256": "b6a347d3df1ff0c3afa4c7ec217bea9138c478000b58644be9b76d25d6166250"
     },
     {
       "path": "Port/Sources/LetterpressPreferences.swift",
@@ -322,7 +322,7 @@
     {
       "path": "Port/control",
       "bytes": 453,
-      "sha256": "5517ebad8aadab705f1a9724c56626fc52ba9c7fdbdbf23a0ba4a8bcd08bb9a3"
+      "sha256": "046affe34906f094d2b17f2c3a226906cda12b155bc6d35f8dd228b324827bfa"
     },
     {
       "path": "Port/project.yml",
@@ -331,8 +331,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 3015,
-      "sha256": "33ee91a01f801d2f339620b5bf567e856adab19359418bab44b3758fdc39bf6d"
+      "bytes": 1389,
+      "sha256": "3dac4bcf61438efb4fa150edaa27b514b180b56b0230e854dde27a8e920d145c"
     },
     {
       "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",
@@ -372,7 +372,6 @@
   "baseline_test8": "0b3d762c82fa92aee998523df75e1134567a83f5",
   "baseline_diagnostic1": "fc9bcf24e990bc063696d5c561657373a8a397c5",
   "baseline_diagnostic2": "62d3abcb64f7297121df8b8980ed0921a63827e4",
-  "git_parent_isolate4": "a0dd59df663fbe30f80b3b4aad3f14be6f5a29cd",
-  "controlled_change": "Only omit the Canvas callback particleSystem.update call. Restore full original draw, symbols, Timeline, Canvas, Reader and original default60 from diag2; do not carry isolate3/4 renderer edits. Version identity only elsewhere.",
-  "test_requirement": "Same track/settings and real auxiliary lyrics; two lock5-10s/wake cycles. Particles may be static or absent. No repeated diagnostic export requested. Retained source is not proof of unchanged runtime scheduling."
+  "controlled_change": "Replace only VortexView animation TimelineSchedule with a stable one-entry explicit schedule. Retain TimelineView, Canvas, update, symbols, Reader, draw and default60; other paths frozen.",
+  "test_requirement": "Same track/settings, confirm real auxiliary lyrics, then two lock5-10s/wake cycles. Particles may be absent/static. No repeated diagnostic JSON requested. Source retention is not device cadence proof."
 }
