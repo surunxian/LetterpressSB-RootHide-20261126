@@ -37,7 +37,7 @@ void LPSBWakeDiagnosticWindow(uint64_t context, uint64_t scene, uint64_t flags);
  *                            requestID: UUID NSString, issuedAtUnix: NSNumber }
  * synchronize request BEFORE notify_post of the same domain + ".command".
  * key report: JSON NSString, NOT an NSDictionary. schema=2,
- * build=0.1.0~test8+diag2; incompatible with diag1; JSON < 1MiB.
+ * build=0.1.0~test8+isolate1; UI rejects prior builds; JSON < 1MiB.
  * Export filename remains Letterpress-diagnostics.json (handled by UI).
  * Busy/replay/stale command rejections use lastCommand in the existing report;
  * root requestID/status and any current recording are preserved.

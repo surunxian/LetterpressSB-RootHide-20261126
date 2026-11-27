@@ -1,3 +1,19 @@
+# Letterpress test8 + isolate1 — 空内容单变量验证
+
+本包版本 `0.1.0~test8+isolate1`，基于已交付 diag2 `62d3abcb64f7297121df8b8980ed0921a63827e4`。**仅供亮屏延迟隔离实验，不是完整功能版或已证实修复版。安装后不显示歌词和粒子是预期行为，不是显示故障。**
+
+唯一功能改动：在同一 `HudViewController` / `UIHostingController` 内，将 `HudContentView` 替换为静态 `Color.clear`。保留外层控制器、截图保护容器、安全模式、覆盖窗口、SBS 注册/可见性、媒体观察器、已创建的 HudViewModel、配置和全部设置；原歌词/粒子文件不修改，但不实例化其内容树。诊断代码只同步新版本标识，不改变采样策略。
+
+覆盖安装后确认 SpringBoard 注入并注销；用原来播放器、同一首歌和相同设置，设置 → Letterpress → 唤醒采样与导出诊断 → 开始，确认 recording，再锁屏5–10秒并亮屏，重复两轮，返回停止等completed并导出新JSON。旧diag2报告会因版本不同被拒绝；请开始新采样，不清除主设置。
+
+反馈请同时说明整屏亮起是否仍延迟，不以无歌词判失败。保留的媒体订阅和窗口意味着本包不是禁用注入对照。延迟消失仅支持内容树/渲染提交方向，不能直接判定Vortex；仍延迟也不能直接归咎secure/SBS。
+
+恢复歌词和粒子：手动重新安装此前 `0.1.0~test8+diag2` 并注销（包管理器可能要求允许降级）；无需删除偏好。发生异常可真正禁用注入并注销。本包未真机，不保证一次修复。源码/资源和许可证仍保留，不上传用户诊断。
+
+---
+
+## 以下为冻结 diag2 / test8 基线的历史说明（不代表本包显示歌词）
+
 # Letterpress — RootHide SpringBoard port
 
 基于 [owngoal-dev/Letterpress](https://github.com/owngoal-dev/Letterpress) 的实验性 SpringBoard 插件移植。上游源码固定为 `121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8`。保留原版 SwiftUI/Vortex 渲染，提供设置 App 内的偏好页；不是独立 App 重打包，也不是 UIKit 近似重写。

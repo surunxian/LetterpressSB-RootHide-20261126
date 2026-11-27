@@ -2,7 +2,7 @@
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
   "baseline_test4": "3f57e86a5381b9a9edccf389a23527ed56c5f640",
-  "status": "test8+diag2 bounded related-thread diagnostic candidate; no rendering/window-policy changes; device validation pending",
+  "status": "test8+isolate1 empty-content same-window validation; not a proven fix; no lyric/particle display; device validation pending",
   "files": [
     {
       "path": ".github/workflows/apple-build.yml",
@@ -91,8 +91,8 @@
     },
     {
       "path": "Port/Preferences/Sources/LPSBWakeDiagnosticsController.m",
-      "bytes": 27483,
-      "sha256": "84abe5e6e995cae59eba38001c04218eadac68c50ffebd615748ddeba0ea2e77"
+      "bytes": 27489,
+      "sha256": "5c48ec151f331ac0574952f57c94d45810ca593d811a44ce4d316ba059675099"
     },
     {
       "path": "Port/Resources/ChillBitmapSE_7px.ttf",
@@ -186,8 +186,8 @@
     },
     {
       "path": "Port/Sources/HudViewController.swift",
-      "bytes": 519,
-      "sha256": "31c05ab6858ba5545f2435e0593af367d4be0a469e46733562cd773a7ca9cd1a"
+      "bytes": 658,
+      "sha256": "fe8b265ebcda6e2c5a79ae42c4bd7896530697f41f54cb1d6e7556c4f54edec1"
     },
     {
       "path": "Port/Sources/HudViewModel.swift",
@@ -226,13 +226,13 @@
     },
     {
       "path": "Port/Sources/LPSBWakeDiagnostics.h",
-      "bytes": 4002,
-      "sha256": "721da41114d87a56ac638e30451bd02ce6c86ebb193944f54b23d1216b3552cc"
+      "bytes": 4005,
+      "sha256": "96c6fa4e489e22cd05dd33042f666beada7922eb98e8ceb0419f61c227821ff0"
     },
     {
       "path": "Port/Sources/LPSBWakeDiagnostics.mm",
-      "bytes": 52892,
-      "sha256": "882c3448c4fe96c12dde214723a05b461ac7547584113feef190755964894c30"
+      "bytes": 52895,
+      "sha256": "d11f6b6d1bb4651d10d02b2de0352422cce1cfc5d01bd35614ea8a356fe839bf"
     },
     {
       "path": "Port/Sources/LetterpressPreferences.swift",
@@ -316,8 +316,8 @@
     },
     {
       "path": "Port/control",
-      "bytes": 450,
-      "sha256": "0934ceea4624553efeaa39d2b1d7a57ed9be4e42b6050a3d9e739f6a41ed47a6"
+      "bytes": 453,
+      "sha256": "f9d1bbc7259c86f5807ead0eef5583364110f9f484b3caf13185e80a0c5dbebd"
     },
     {
       "path": "Port/project.yml",
@@ -326,8 +326,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 7252,
-      "sha256": "59c2212d1e8c19f0a050113de291465df24ef927075d972ca724e3ac21d7f78e"
+      "bytes": 9033,
+      "sha256": "e1d307549cf0e50c1c4c3631e3fe7b7438affa9c2447a3e13e6ef0b56543cd7f"
     },
     {
       "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",
@@ -365,5 +365,7 @@
     "no_wait_owner_or_GPU_state": true
   },
   "baseline_test8": "0b3d762c82fa92aee998523df75e1134567a83f5",
-  "baseline_diagnostic1": "fc9bcf24e990bc063696d5c561657373a8a397c5"
+  "baseline_diagnostic1": "fc9bcf24e990bc063696d5c561657373a8a397c5",
+  "baseline_diagnostic2": "62d3abcb64f7297121df8b8980ed0921a63827e4",
+  "controlled_change": "UIHostingController<HudContentView> to UIHostingController<Color> with Color.clear; media/VM and secure window containment unchanged"
 }

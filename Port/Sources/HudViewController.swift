@@ -7,9 +7,11 @@
 
 import SwiftUI
 
-final class HudViewController: UIHostingController<HudContentView> {
+// Isolation-only build: keep the hosting controller and security/containment
+// chain, but do not instantiate the lyric/particle content tree.
+final class HudViewController: UIHostingController<Color> {
     init() {
-        super.init(rootView: .init())
+        super.init(rootView: Color.clear)
         self._setSecurityModeForViewsLayer()
     }
 
