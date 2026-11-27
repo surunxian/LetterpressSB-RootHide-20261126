@@ -2,7 +2,7 @@
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
   "baseline_test4": "3f57e86a5381b9a9edccf389a23527ed56c5f640",
-  "status": "test8+diag1 diagnostic-only candidate; no rendering/window-policy changes; device validation pending",
+  "status": "test8+diag2 bounded related-thread diagnostic candidate; no rendering/window-policy changes; device validation pending",
   "files": [
     {
       "path": ".github/workflows/apple-build.yml",
@@ -91,8 +91,8 @@
     },
     {
       "path": "Port/Preferences/Sources/LPSBWakeDiagnosticsController.m",
-      "bytes": 26940,
-      "sha256": "80b4068ec3cf69d37d0abbef9a2b57a4bd8a5220d5193e7426cb2a01b303d58d"
+      "bytes": 27483,
+      "sha256": "84abe5e6e995cae59eba38001c04218eadac68c50ffebd615748ddeba0ea2e77"
     },
     {
       "path": "Port/Resources/ChillBitmapSE_7px.ttf",
@@ -226,13 +226,13 @@
     },
     {
       "path": "Port/Sources/LPSBWakeDiagnostics.h",
-      "bytes": 3863,
-      "sha256": "9adc6cc4362db3869bc8ea9b17d1a4650e940adab7a7dafa709f99d0cc78a16b"
+      "bytes": 4002,
+      "sha256": "721da41114d87a56ac638e30451bd02ce6c86ebb193944f54b23d1216b3552cc"
     },
     {
       "path": "Port/Sources/LPSBWakeDiagnostics.mm",
-      "bytes": 33466,
-      "sha256": "1352d4e7473aedd70bda0624f391e88c4c8165819b0122827fea23b8585ee91b"
+      "bytes": 52892,
+      "sha256": "882c3448c4fe96c12dde214723a05b461ac7547584113feef190755964894c30"
     },
     {
       "path": "Port/Sources/LetterpressPreferences.swift",
@@ -317,7 +317,7 @@
     {
       "path": "Port/control",
       "bytes": 450,
-      "sha256": "63ec6403a598850ebb4dacd889f563d43be9eb992eb7d6c49a876ac2e4338123"
+      "sha256": "0934ceea4624553efeaa39d2b1d7a57ed9be4e42b6050a3d9e739f6a41ed47a6"
     },
     {
       "path": "Port/project.yml",
@@ -326,8 +326,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 6496,
-      "sha256": "1c84cc4adced45aaa00eb439c8a7c94219d95ca5dd8e9ea5020c52943e2cff08"
+      "bytes": 7252,
+      "sha256": "59c2212d1e8c19f0a050113de291465df24ef927075d972ca724e3ac21d7f78e"
     },
     {
       "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",
@@ -343,11 +343,27 @@
   "baseline_test5": "0e287074fd9d6f928ed702344ba91743d58fdaf9",
   "baseline_test6": "0ba7b2f3c01f8cac29f0ec5080e1f88bf2c247c3",
   "baseline_test7": "c74be8f033bfecedc6e707cd14b8eb4c7b35a71c",
-  "limits": [
-    "Settings UIKit/Preferences is not the original SwiftUI App shell; no standalone preview or TIPA updater",
-    "Asynchronous media bridge and fail-closed lock/blank policy remain host adaptations",
-    "App-list alphabetical index/search highlighting not yet restored; original AltList visible classification not proven equivalent",
-    "Physical wake latency, screenshot privacy, rotation geometry and device behavior not verified"
-  ],
-  "baseline_test8": "0b3d762c82fa92aee998523df75e1134567a83f5"
+  "limits": {
+    "capture_seconds": 90,
+    "main_samples": 24,
+    "samples_per_busy": 6,
+    "main_FP_frames": 48,
+    "sample_spacing_ms": 250,
+    "busy_threshold_ms": 250,
+    "worker_trigger_ms": 500,
+    "worker_snapshots": 4,
+    "worker_scan_per_snapshot": 96,
+    "worker_selected_per_snapshot": 24,
+    "worker_FP_frames": 24,
+    "worker_soft_budget_ms": 20,
+    "events": 2048,
+    "images": 192,
+    "image_headers": 4096,
+    "executable_ranges_per_image": 4,
+    "JSON_bytes_exclusive": 1048576,
+    "non_atomic": true,
+    "no_wait_owner_or_GPU_state": true
+  },
+  "baseline_test8": "0b3d762c82fa92aee998523df75e1134567a83f5",
+  "baseline_diagnostic1": "fc9bcf24e990bc063696d5c561657373a8a397c5"
 }

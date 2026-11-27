@@ -6,8 +6,8 @@
 #import <math.h>
 
 static NSString *const LPWakeDomain = @"com.82flex.letterpress.diagnostics";
-static NSString *const LPWakeBuild = @"0.1.0~test8+diag1";
-static const NSUInteger LPWakeReportLimit = 384 * 1024;
+static NSString *const LPWakeBuild = @"0.1.0~test8+diag2";
+static const NSUInteger LPWakeReportLimit = 1024 * 1024;
 static const char *const LPWakeCommandNotification = "com.82flex.letterpress.diagnostics.command";
 
 // Bound dictionary compatibility input before serialization, including JSON escaping.
@@ -68,7 +68,7 @@ static NSDictionary *LPWakeReadReport(id raw, NSData **dataOut, NSString **probl
     if ([raw isKindOfClass:NSString.class]) {
         // Check UTF-8 length BEFORE creating NSData or asking the JSON parser to read it.
         if ([(NSString *)raw lengthOfBytesUsingEncoding:NSUTF8StringEncoding] > LPWakeReportLimit) {
-            *problem = @"报告超过 384 KB 上限，拒绝读取或导出。"; return nil;
+            *problem = @"报告超过 1 MiB 上限，拒绝读取或导出。"; return nil;
         }
         data = [raw dataUsingEncoding:NSUTF8StringEncoding];
     } else if ([raw isKindOfClass:NSDictionary.class]) {
@@ -79,16 +79,16 @@ static NSDictionary *LPWakeReadReport(id raw, NSData **dataOut, NSString **probl
         data = [NSJSONSerialization dataWithJSONObject:raw options:0 error:NULL];
     }
     if (!data || data.length > LPWakeReportLimit) {
-        *problem = @"诊断报告类型错误、无法编码或超过 384 KB；未确认采样成功。"; return nil;
+        *problem = @"诊断报告类型错误、无法编码或超过 1 MiB；未确认采样成功。"; return nil;
     }
     id parsed = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
     if (![parsed isKindOfClass:NSDictionary.class]) {
         *problem = @"诊断报告不是合法 JSON 对象。"; return nil;
     }
     NSDictionary *report = parsed;
-    if (!LPWakeNumber(report[@"schema"]) || [report[@"schema"] doubleValue] != 1 ||
+    if (!LPWakeNumber(report[@"schema"]) || [report[@"schema"] doubleValue] != 2 ||
         ![report[@"build"] isKindOfClass:NSString.class] || ![report[@"build"] isEqualToString:LPWakeBuild]) {
-        *problem = @"这是旧版或不兼容的诊断报告（需要 schema 1 / 0.1.0~test8+diag1），不能作为本次结果。"; return nil;
+        *problem = @"这是旧版或不兼容的诊断报告（需要 schema 2 / 0.1.0~test8+diag2），不能作为本次结果。"; return nil;
     }
     NSString *status = report[@"status"];
     if (![status isKindOfClass:NSString.class] ||
@@ -100,8 +100,9 @@ static NSDictionary *LPWakeReadReport(id raw, NSData **dataOut, NSString **probl
         (!LPWakeNumber(report[@"startedAtUnix"]) || !LPWakeNumber(report[@"endedAtUnix"]) ||
          !LPWakeNumber(report[@"duration"]) || [report[@"endedAtUnix"] doubleValue] < [report[@"startedAtUnix"] doubleValue] ||
          ![report[@"events"] isKindOfClass:NSArray.class] || ![report[@"samples"] isKindOfClass:NSArray.class] ||
-         ![report[@"images"] isKindOfClass:NSArray.class] || ![report[@"limits"] isKindOfClass:NSDictionary.class])) {
-        *problem = @"completed 报告缺少完整时间、events、samples、images 或 limits，不能完整导出。"; return nil;
+         ![report[@"images"] isKindOfClass:NSArray.class] || ![report[@"limits"] isKindOfClass:NSDictionary.class] ||
+         ![report[@"workerSnapshots"] isKindOfClass:NSArray.class])) {
+        *problem = @"completed 报告缺少完整时间、events、samples、workerSnapshots、images 或 limits，不能完整导出。"; return nil;
     }
     *dataOut = data;
     return report;
@@ -233,7 +234,7 @@ static NSDictionary *LPWakeReadReport(id raw, NSData **dataOut, NSString **probl
     if (![self lpReportMatchesLatestRequest]) return @"现有报告未确认最新命令（可能是旧报告）；不可作为本次采样结果导出。";
     NSString *status = self.lpReport[@"status"];
     if ([status isEqualToString:@"recording"]) return @"SpringBoard 已接受采样（recording），尚非完整报告；最多观察 90 秒，请按步骤复现后返回停止。";
-    if ([status isEqualToString:@"completed"]) return @"SpringBoard 报告已完成（completed），可导出完整 JSON；不代表已找到或修复问题。";
+    if ([status isEqualToString:@"completed"]) return [NSString stringWithFormat:@"SpringBoard 报告已完成（completed），工作线程快照记录 %lu 组（可能含错误或覆盖不足）；可导出 JSON 分析，不代表已找到或修复问题。", (unsigned long)[self.lpReport[@"workerSnapshots"] count]];
     if ([status isEqualToString:@"cleared"]) return @"SpringBoard 已确认清除诊断报告；未恢复或更改任何偏好。";
     return @"SpringBoard 返回 error（可能 busy / rejected）；未确认本次操作成功。";
 }
@@ -244,7 +245,7 @@ static NSDictionary *LPWakeReadReport(id raw, NSData **dataOut, NSString **probl
 }
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
     (void)tableView; (void)section;
-    return [NSString stringWithFormat:@"只有手动点开始后才请求 SpringBoard 进行最多 90 秒观察；本页不自行采样或改变设备。\n操作：开始 → 去播放器放歌 → 锁屏 30 秒 → 亮屏后回本页 → 停止并保存 → 导出。\n\n状态：%@%@\n\n仅收集诊断元数据，不采集歌词或账号。不自动复制到剪贴板、不自动联网或公开上传；分享由你选择目的地。采样会产生少量额外开销，不保证捕获根因，请避免连续长开。",
+    return [NSString stringWithFormat:@"诊断二版：只有手动点开始后才请求 SpringBoard 最多观察 90 秒；保持原歌词、粒子和窗口逻辑。主线程出现持续等待时，后台最多补抓 4 组有界工作线程快照。\n操作：开始并确认 recording → 去播放器放歌 → 锁屏约 5–10 秒后亮屏，重复两轮 → 回本页停止并保存 → 导出。\n\n状态：%@%@\n\n报告含时间、数值地址、镜像名/UUID、线程ID及窗口状态等运行元数据；不采集歌词、账号、线程名称或整块内存转储。不自动联网或公开上传；分享由你选择目的地。额外线程查询会产生开销并可能影响时序，快照并非同时原子采集；不保证捕获根因，也不代表延迟已修复。",
         [self lpSummary], self.lpFeedback.length ? [@"\n" stringByAppendingString:self.lpFeedback] : @""];
 }
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -330,7 +331,7 @@ static NSDictionary *LPWakeReadReport(id raw, NSData **dataOut, NSString **probl
         self.lpFeedback = @"SpringBoard 返回 error / 拒绝命令；若为重复开始或 busy / rejected，未开始新的采样。不会由设置页清空或覆盖旧报告。";
         [self lpAlert:@"诊断命令被拒绝" message:self.lpFeedback];
     } else if ([self.lpCommand isEqualToString:@"start"] && [status isEqualToString:@"recording"]) {
-        self.lpFeedback = @"已核验本次 requestID：SpringBoard 已接受开始；recording 不是完整导出。请去播放器放歌、锁屏 30 秒，亮屏后返回停止。";
+        self.lpFeedback = @"已核验本次 requestID：SpringBoard 已接受开始；recording 不是完整导出。请去播放器放歌，锁屏约 5–10 秒后亮屏、重复两轮，再返回停止并保存。";
     } else if (([self.lpCommand isEqualToString:@"start"] || [self.lpCommand isEqualToString:@"stop"]) &&
                [status isEqualToString:@"completed"]) {
         self.lpFeedback = @"已核验本次 requestID 和 completed 完整报告，可手动导出；这不表示问题已修复。";
@@ -389,7 +390,7 @@ static NSDictionary *LPWakeReadReport(id raw, NSData **dataOut, NSString **probl
 - (void)lpShareData:(NSData *)data fromIndexPath:(NSIndexPath *)indexPath {
     if (!self.lpVisible || self.presentedViewController) return;
     if (!data || data.length > LPWakeReportLimit) {
-        [self lpAlert:@"无法导出诊断" message:@"报告为空或超出 384 KB 上限。"];
+        [self lpAlert:@"无法导出诊断" message:@"报告为空或超出 1 MiB 上限。"];
         return;
     }
     NSFileManager *manager = NSFileManager.defaultManager;

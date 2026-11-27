@@ -22,9 +22,11 @@ extern "C" kern_return_t mach_vm_read_overwrite(vm_map_t target_task,
 #include <unistd.h>
 
 namespace {
-constexpr uint32_t kEvents = 2048, kSamples = 24, kFrames = 24;
+constexpr uint32_t kEvents = 2048, kSamples = 24, kFrames = 48;
 constexpr uint32_t kImages = 192, kNonces = 128;
-constexpr uint64_t kSpan = 1024 * 1024, kMaxJSON = 384 * 1024;
+constexpr uint32_t kWorkerSnapshots = 4, kWorkerScan = 96, kWorkers = 24, kWorkerFrames = 24;
+constexpr uint64_t kSpan = 1024 * 1024, kMaxJSON = 1024 * 1024;
+constexpr uint64_t kWorkerBudgetNS = 20 * 1000000;
 constexpr uint64_t kMS = 1000000, kSecond = 1000000000;
 static_assert(std::atomic<uint64_t>::is_always_lock_free, "64-bit atomics required");
 static_assert(std::atomic<uint32_t>::is_always_lock_free, "32-bit atomics required");
@@ -65,9 +67,32 @@ struct Sample {
     uint64_t context, scene, flags, windowCoherent;
     int32_t error, machError, runState, suspendCount, cpuUsage, threadFlags;
     uint32_t frameCount;
+    bool frameLimitReached;
     uint64_t frames[kFrames][3]; // FP, saved LR raw word, PAC-stripped saved LR
 };
 static Sample gSamples[kSamples];
+// Capture is fixed-storage C/Mach work only; no names/paths/pthread pointers persist.
+struct Worker {
+    uint64_t threadID, begin, end, pc, lr, fp;
+    int32_t error, machError, identifierError, basicError, extendedError;
+    int32_t runState, suspendCount, cpuUsage, threadFlags;
+    uint32_t frameCount;
+    bool identifierShort, basicShort, extendedShort, renderNameHint;
+    bool frameLimitReached, budgetExceeded;
+    uint64_t frames[kWorkerFrames][3];
+};
+struct WorkerSnapshot {
+    uint64_t begin, end, busy, mainBusyAtBegin, mainBusyAtEnd;
+    uint32_t mainSampleIndex, totalThreads, scanStart, scanned, eligible, candidateCount, captured;
+    uint32_t excludedMain, excludedCollector, identifierFailures, basicFailures, extendedFailures;
+    uint32_t portsReleased, portReleaseFailures;
+    int32_t error, machError, collectorReleaseError, arrayReleaseError, firstPortReleaseError;
+    bool scanTruncated, candidatesTruncated, budgetExceeded, mainBusyStampChangedDuringCapture;
+    Worker workers[kWorkers];
+};
+static WorkerSnapshot gWorkerSnapshots[kWorkerSnapshots];
+static uint32_t gWorkerSnapshotCount, gWorkerScanCursor;
+static uint64_t gWorkerAttemptedBusy;
 
 static inline uint64_t Clock() noexcept { return mach_continuous_time(); }
 static uint64_t NS(uint64_t ticks) noexcept {
@@ -178,9 +203,185 @@ static void Capture(uint64_t now, uint64_t busy, uint64_t observedSince) noexcep
         if (next <= fp) { s.error = 5; return; }
         fp = next;
     }
+    s.frameLimitReached = true;
 #else
     s.error = 9;
 #endif
+}
+
+// The 20ms budget is cooperative, not a bound on Mach syscall/cleanup latency.
+static bool WorkerStop(WorkerSnapshot &s) noexcept {
+    if (gBusy.load(std::memory_order_acquire) != s.busy) {
+        s.mainBusyStampChangedDuringCapture = true;
+        if (!s.error) s.error = 11;
+    }
+    if (NS(Clock() - s.begin) >= kWorkerBudgetNS) {
+        s.budgetExceeded = true;
+        if (!s.error) s.error = 20;
+    }
+    return s.mainBusyStampChangedDuringCapture || s.budgetExceeded;
+}
+static bool RenderNameHint(const char *name, size_t size) noexcept {
+    // Only a bounded in-memory ranking hint, never identity or proof of ownership.
+    const char *hints[] = {"render", "quartz", "com.apple.ca.", "metal", "agx"};
+    for (const char *hint : hints) {
+        size_t n = std::strlen(hint);
+        for (size_t i = 0; i + n <= size && name[i]; ++i) {
+            size_t j = 0;
+            for (; j < n; ++j) {
+                unsigned char c = (unsigned char)name[i + j];
+                if (c >= 'A' && c <= 'Z') c += 'a' - 'A';
+                if (c != (unsigned char)hint[j]) break;
+            }
+            if (j == n) return true;
+        }
+    }
+    return false;
+}
+static void CaptureWorker(thread_t thread, Worker &w, WorkerSnapshot &snapshot) noexcept {
+#if defined(__arm64__) || defined(__aarch64__)
+    if (WorkerStop(snapshot)) { w.error = snapshot.budgetExceeded ? 20 : 11; return; }
+    arm_thread_state64_t state = {};
+    mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
+    kern_return_t kr = thread_get_state(thread, ARM_THREAD_STATE64, (thread_state_t)&state, &count);
+    if (kr != KERN_SUCCESS) { w.error = 1; w.machError = kr; return; }
+    if (count != ARM_THREAD_STATE64_COUNT) { w.error = 10; return; }
+    w.pc = (uint64_t)ptrauth_strip((void *)(uintptr_t)arm_thread_state64_get_pc(state),
+                                   ptrauth_key_function_pointer);
+    w.lr = StripCode((uint64_t)arm_thread_state64_get_lr(state));
+    w.fp = StripFP((uint64_t)arm_thread_state64_get_fp(state));
+    uint64_t fp = w.fp, first = fp;
+    for (uint32_t i = 0; i < kWorkerFrames; ++i) {
+        if (WorkerStop(snapshot)) { w.error = snapshot.budgetExceeded ? 20 : 11; return; }
+        if (!fp) return;
+        // No remote pthread dereference or guessed stack extent. VM validates each pair.
+        if ((fp & 15) || fp > UINT64_MAX - 16) { w.error = 4; return; }
+        if (fp < first || fp - first > kSpan - 16) { w.error = 6; return; }
+        uint64_t pair[2] = {}; mach_vm_size_t copied = 0;
+        kr = mach_vm_read_overwrite(mach_task_self(), fp, sizeof(pair),
+                                    (mach_vm_address_t)pair, &copied);
+        if (kr != KERN_SUCCESS) { w.error = 7; w.machError = kr; return; }
+        if (copied != sizeof(pair)) { w.error = 8; return; }
+        w.frames[w.frameCount][0] = fp;
+        w.frames[w.frameCount][1] = pair[1];
+        w.frames[w.frameCount++][2] = StripCode(pair[1]);
+        uint64_t next = StripFP(pair[0]);
+        if (!next) return;
+        if (next <= fp) { w.error = 5; return; }
+        fp = next;
+    }
+    w.frameLimitReached = true;
+#else
+    (void)thread; (void)snapshot; w.error = 9;
+#endif
+}
+static void CaptureWorkers(uint32_t mainIndex) noexcept {
+    WorkerSnapshot &s = gWorkerSnapshots[gWorkerSnapshotCount++];
+    std::memset(&s, 0, sizeof(s));
+    s.begin = Clock(); s.busy = gSamples[mainIndex].runLoopBusy; s.mainSampleIndex = mainIndex;
+    s.mainBusyAtBegin = gBusy.load(std::memory_order_acquire);
+    EventAt(gEpoch, s.begin, 230, gWorkerSnapshotCount - 1, mainIndex);
+    // Defensive guard; Tick normally runs only on the serial diagnostic queue.
+    if (pthread_main_np()) { s.error = 12; s.end = Clock(); return; }
+    thread_t collector = mach_thread_self(); // owns a temporary send right, released below
+    thread_act_array_t ports = nullptr; mach_msg_type_number_t total = 0;
+    struct Candidate { thread_t port; Worker worker; } candidates[kWorkers] = {};
+    auto Better = [](const Worker &a, const Worker &b) {
+        if (a.renderNameHint != b.renderNameHint) return a.renderNameHint;
+        bool ar = a.runState == TH_STATE_RUNNING, br = b.runState == TH_STATE_RUNNING;
+        if (ar != br) return ar;
+        if (a.cpuUsage != b.cpuUsage) return a.cpuUsage > b.cpuUsage;
+        return a.threadID < b.threadID;
+    };
+    kern_return_t kr = KERN_SUCCESS;
+    if (!MACH_PORT_VALID(collector)) s.error = 13;
+    else if (!WorkerStop(s)) {
+        kr = task_threads(mach_task_self(), &ports, &total);
+        s.totalThreads = total;
+        if (kr != KERN_SUCCESS) { s.error = 14; s.machError = kr; }
+        else if (total && !ports) s.error = 15;
+        else {
+            s.scanStart = total ? gWorkerScanCursor % total : 0;
+            const uint32_t limit = total < kWorkerScan ? total : kWorkerScan;
+            for (uint32_t n = 0; n < limit; ++n) {
+                if (WorkerStop(s)) break;
+                uint32_t index = (uint32_t)(((uint64_t)s.scanStart + n) % total);
+                ++s.scanned;
+                thread_t port = ports[index];
+                if (port == gMainThread) { ++s.excludedMain; continue; }
+                if (port == collector) { ++s.excludedCollector; continue; }
+                Worker w = {}; w.begin = Clock();
+                thread_identifier_info_data_t identity = {};
+                mach_msg_type_number_t count = THREAD_IDENTIFIER_INFO_COUNT;
+                w.identifierError = thread_info(port, THREAD_IDENTIFIER_INFO, (thread_info_t)&identity, &count);
+                w.identifierShort = w.identifierError == KERN_SUCCESS && count != THREAD_IDENTIFIER_INFO_COUNT;
+                if (w.identifierError || w.identifierShort) ++s.identifierFailures;
+                else w.threadID = identity.thread_id;
+                if (!WorkerStop(s)) {
+                    thread_basic_info_data_t info = {}; count = THREAD_BASIC_INFO_COUNT;
+                    w.basicError = thread_info(port, THREAD_BASIC_INFO, (thread_info_t)&info, &count);
+                    w.basicShort = w.basicError == KERN_SUCCESS && count != THREAD_BASIC_INFO_COUNT;
+                    if (w.basicError || w.basicShort) ++s.basicFailures;
+                    else {
+                        w.runState = info.run_state; w.suspendCount = info.suspend_count;
+                        w.cpuUsage = info.cpu_usage; w.threadFlags = info.flags;
+                    }
+                } else w.basicError = KERN_ABORTED;
+                if (!WorkerStop(s)) {
+                    thread_extended_info_data_t info = {}; count = THREAD_EXTENDED_INFO_COUNT;
+                    w.extendedError = thread_info(port, THREAD_EXTENDED_INFO, (thread_info_t)&info, &count);
+                    w.extendedShort = w.extendedError == KERN_SUCCESS && count != THREAD_EXTENDED_INFO_COUNT;
+                    if (w.extendedError || w.extendedShort) ++s.extendedFailures;
+                    else w.renderNameHint = RenderNameHint(info.pth_name, sizeof(info.pth_name));
+                    // info (including pth_name) is never copied into persistent storage.
+                    std::memset(&info, 0, sizeof(info));
+                } else w.extendedError = KERN_ABORTED;
+                w.end = Clock(); ++s.eligible;
+                uint32_t pos = 0;
+                while (pos < s.candidateCount && !Better(w, candidates[pos].worker)) ++pos;
+                if (pos < kWorkers) {
+                    uint32_t last = s.candidateCount < kWorkers ? s.candidateCount++ : kWorkers - 1;
+                    for (uint32_t j = last; j > pos; --j) candidates[j] = candidates[j - 1];
+                    candidates[pos] = {port, w};
+                }
+            }
+            // Advance even when a syscall consumed the budget before the first scan.
+            gWorkerScanCursor = total ? (uint32_t)(((uint64_t)s.scanStart + (s.scanned ? s.scanned : 1)) % total) : 0;
+            s.scanTruncated = s.scanned < total;
+            s.candidatesTruncated = s.eligible > s.candidateCount;
+            for (uint32_t i = 0; i < s.candidateCount; ++i) {
+                Worker &w = s.workers[i]; w = candidates[i].worker;
+                if (!WorkerStop(s)) { ++s.captured; CaptureWorker(candidates[i].port, w, s); }
+                else w.error = s.budgetExceeded ? 20 : 11;
+                w.end = Clock(); w.budgetExceeded = s.budgetExceeded;
+            }
+        }
+    }
+    // Cleanup is unconditional after task_threads, including partial/error returns.
+    // It is intentionally NOT stopped by the soft budget: every acquired right must go.
+    if (ports) {
+        for (uint32_t i = 0; i < total; ++i) {
+            kern_return_t e = mach_port_deallocate(mach_task_self(), ports[i]);
+            if (e == KERN_SUCCESS) ++s.portsReleased;
+            else { ++s.portReleaseFailures; if (!s.firstPortReleaseError) s.firstPortReleaseError = e; }
+        }
+        s.arrayReleaseError = vm_deallocate(mach_task_self(), (vm_address_t)ports,
+                                            (vm_size_t)total * sizeof(thread_t));
+    }
+    if (MACH_PORT_VALID(collector)) s.collectorReleaseError = mach_port_deallocate(mach_task_self(), collector);
+    (void)WorkerStop(s);
+    s.mainBusyAtEnd = gBusy.load(std::memory_order_acquire); s.end = Clock();
+    EventAt(gEpoch, s.end, 231, gWorkerSnapshotCount - 1, NS(s.end - s.begin));
+}
+static void MaybeCaptureWorkers() noexcept {
+    if (gSampleCount < 2 || gWorkerSnapshotCount >= kWorkerSnapshots) return;
+    const Sample &a = gSamples[gSampleCount - 2], &b = gSamples[gSampleCount - 1];
+    if (b.runLoopBusy == gWorkerAttemptedBusy || a.runLoopBusy != b.runLoopBusy ||
+        a.observationStart != b.observationStart || a.error || b.error ||
+        a.runState != TH_STATE_WAITING || b.runState != TH_STATE_WAITING ||
+        a.pc != b.pc || a.lr != b.lr || NS(b.time - b.busy) < 500 * kMS) return;
+    gWorkerAttemptedBusy = b.runLoopBusy; // a failed attempt still consumes this busy interval
+    CaptureWorkers(gSampleCount - 1);
 }
 
 // All dyld enumeration and Foundation work runs on the diagnostic serial queue.
@@ -217,6 +418,12 @@ static NSArray *CollectImages() {
         for (uint32_t j = 0; j < gSamples[i].frameCount && count < kImages; ++j)
             AddCode(gSamples[i].frames[j][2]);
     }
+    for (uint32_t i = 0; i < gWorkerSnapshotCount && count < kImages; ++i)
+        for (uint32_t j = 0; j < gWorkerSnapshots[i].candidateCount && count < kImages; ++j) {
+            const Worker &w = gWorkerSnapshots[i].workers[j];
+            AddCode(w.pc); AddCode(w.lr);
+            for (uint32_t f = 0; f < w.frameCount && count < kImages; ++f) AddCode(w.frames[f][2]);
+        }
     for (uint32_t i = 0; i < gImageHeadersChecked && count < kImages; ++i) AddIndex(i);
     for (uint32_t slot = 0; slot < count; ++slot) {
         uint32_t i = selected[slot];
@@ -249,31 +456,61 @@ static NSArray *CollectImages() {
         basename[used] = 0;
         uint64_t offset = sizeof(header);
         uint64_t limit = sizeof(header) + (uint64_t)header.sizeofcmds;
-        if (header.sizeofcmds <= 65536 && header.ncmds <= 1024 && base <= UINT64_MAX - limit) {
-            for (uint32_t j = 0; j < header.ncmds && offset + sizeof(load_command) <= limit; ++j) {
+        const int64_t slide = (int64_t)_dyld_get_image_vmaddr_slide(i);
+        NSMutableArray *ranges = [NSMutableArray arrayWithCapacity:4];
+        bool rangeTruncated = false; uint32_t executableSegments = 0;
+        int32_t rangeError = 0, rangeMachError = 0;
+        if (header.sizeofcmds > 65536 || header.ncmds > 1024 || base > UINT64_MAX - limit) rangeError = 1;
+        else {
+            for (uint32_t j = 0; j < header.ncmds; ++j) {
+                if (offset > limit || limit - offset < sizeof(load_command)) { rangeError = 2; break; }
                 struct load_command command = {};
-                if (!Read(base + offset, &command, sizeof(command), error)) break;
-                if (command.cmdsize < sizeof(command) || command.cmdsize > limit - offset) break;
-                if (command.cmd == LC_UUID && command.cmdsize >= sizeof(uuid_command)) {
+                if (!Read(base + offset, &command, sizeof(command), rangeMachError)) { rangeError = 3; break; }
+                if (command.cmdsize < sizeof(command) || command.cmdsize > limit - offset || (command.cmdsize & 7)) {
+                    rangeError = 2; break;
+                }
+                if (command.cmd == LC_UUID) {
+                    if (command.cmdsize < sizeof(uuid_command)) { rangeError = 2; break; }
                     struct uuid_command u = {};
-                    if (Read(base + offset, &u, sizeof(u), error)) {
-                        static const char hex[] = "0123456789abcdef";
-                        unsigned pos = 0;
-                        for (unsigned k = 0; k < 16; ++k) {
-                            if (k == 4 || k == 6 || k == 8 || k == 10) uuid[pos++] = '-';
-                            uuid[pos++] = hex[u.uuid[k] >> 4]; uuid[pos++] = hex[u.uuid[k] & 15];
-                        }
+                    if (!Read(base + offset, &u, sizeof(u), rangeMachError)) { rangeError = 3; break; }
+                    static const char hex[] = "0123456789abcdef";
+                    unsigned pos = 0;
+                    for (unsigned k = 0; k < 16; ++k) {
+                        if (k == 4 || k == 6 || k == 8 || k == 10) uuid[pos++] = '-';
+                        uuid[pos++] = hex[u.uuid[k] >> 4]; uuid[pos++] = hex[u.uuid[k] & 15];
                     }
-                    break;
+                    // Do not break: executable segments can follow LC_UUID.
+                } else if (command.cmd == LC_SEGMENT_64) {
+                    if (command.cmdsize < sizeof(segment_command_64)) { rangeError = 2; break; }
+                    struct segment_command_64 segment = {};
+                    if (!Read(base + offset, &segment, sizeof(segment), rangeMachError)) { rangeError = 3; break; }
+                    uint64_t needed = sizeof(segment) + (uint64_t)segment.nsects * sizeof(section_64);
+                    if (needed > command.cmdsize) { rangeError = 2; break; }
+                    if ((segment.initprot & VM_PROT_EXECUTE) && segment.vmsize) {
+                        ++executableSegments;
+                        // True signed dyld slide: no unsigned wrap or guessed nearest base.
+                        __int128 start = (__int128)segment.vmaddr + (__int128)slide;
+                        __int128 end = start + (__int128)segment.vmsize;
+                        if (segment.vmaddr > UINT64_MAX - segment.vmsize || start < 0 ||
+                            start > UINT64_MAX || end > UINT64_MAX || end <= start) {
+                            rangeError = 4;
+                        } else if (ranges.count >= 4) rangeTruncated = true;
+                        else [ranges addObject:@{ @"start":@((uint64_t)start), @"endExclusive":@((uint64_t)end),
+                                                  @"initprot":@(segment.initprot) }];
+                    }
                 }
                 offset += command.cmdsize;
             }
+            if (!rangeError && offset != limit) rangeError = 2;
         }
         if (base == ownBase && uuid[0]) gOwnImageIncluded = true;
         NSString *n = [[NSString alloc] initWithBytes:basename length:used encoding:NSUTF8StringEncoding];
         NSString *u = [NSString stringWithUTF8String:uuid];
         [out addObject:@{@"basename":n ?: @"", @"uuid":u ?: @"", @"loadAddress":@(base),
-                         @"slide":@((int64_t)_dyld_get_image_vmaddr_slide(i))}];
+                         @"slide":@(slide), @"executableRanges":ranges,
+                         @"executableSegmentCount":@(executableSegments), @"rangeTruncated":@(rangeTruncated),
+                         @"rangeError":@(rangeError), @"rangeMachError":@(rangeMachError),
+                         @"executableRangesComplete":@(!rangeError && !rangeTruncated)}];
     }
     return out;
 }
@@ -308,8 +545,54 @@ static NSArray *SamplesJSON() {
             @"pc":@(s.pc), @"lr":@(s.lr), @"fp":@(s.fp), @"error":@(s.error),
             @"machError":@(s.machError), @"runState":@(s.runState), @"suspendCount":@(s.suspendCount),
             @"cpuUsage":@(s.cpuUsage), @"threadFlags":@(s.threadFlags), @"frames":frames,
+            @"frameLimitReached":@(s.frameLimitReached), @"atomicSnapshot":@NO,
             @"stage":@(s.stage), @"stageTimeNs":@(s.stageTime >= gStart ? NS(s.stageTime - gStart) : 0),
             @"window":@[@(s.context), @(s.scene), @(s.flags)], @"windowCoherent":@(s.windowCoherent)}];
+    }
+    return out;
+}
+static NSArray *WorkerSnapshotsJSON() {
+    NSMutableArray *out = [NSMutableArray arrayWithCapacity:gWorkerSnapshotCount];
+    for (uint32_t i = 0; i < gWorkerSnapshotCount; ++i) {
+        const WorkerSnapshot &s = gWorkerSnapshots[i];
+        NSMutableArray *workers = [NSMutableArray arrayWithCapacity:s.candidateCount];
+        for (uint32_t j = 0; j < s.candidateCount; ++j) {
+            const Worker &w = s.workers[j];
+            NSMutableArray *frames = [NSMutableArray arrayWithCapacity:w.frameCount];
+            for (uint32_t f = 0; f < w.frameCount; ++f)
+                [frames addObject:@[@(w.frames[f][0]), @(w.frames[f][1]), @(w.frames[f][2])]];
+            [workers addObject:@{@"thread_id":@(w.threadID),
+                @"threadIDKnown":@(!w.identifierError && !w.identifierShort && w.threadID != 0),
+                @"beginTNs":@(NS(w.begin - gStart)), @"endTNs":@(NS(w.end - gStart)),
+                @"pc":@(w.pc), @"lr":@(w.lr), @"fp":@(w.fp), @"frames":frames,
+                @"error":@(w.error), @"machError":@(w.machError),
+                @"identifierError":@(w.identifierError), @"identifierShort":@(w.identifierShort),
+                @"basicError":@(w.basicError), @"basicShort":@(w.basicShort),
+                @"extendedError":@(w.extendedError), @"extendedShort":@(w.extendedShort),
+                @"renderNameHint":@(w.renderNameHint), @"runState":@(w.runState),
+                @"suspendCount":@(w.suspendCount), @"cpuUsage":@(w.cpuUsage), @"threadFlags":@(w.threadFlags),
+                @"stackBoundsKnown":@NO, @"atomicSnapshot":@NO,
+                @"frameLimitReached":@(w.frameLimitReached), @"budgetExceeded":@(w.budgetExceeded)}];
+        }
+        [out addObject:@{@"mainSampleIndex":@(s.mainSampleIndex),
+            @"mainSampleTNs":@(NS(gSamples[s.mainSampleIndex].time - gStart)),
+            @"beginTNs":@(NS(s.begin - gStart)), @"endTNs":@(NS(s.end - gStart)),
+            @"elapsedNs":@(NS(s.end - s.begin)), @"softBudgetNs":@(kWorkerBudgetNS),
+            @"budgetExceeded":@(s.budgetExceeded), @"atomicWithMain":@NO,
+            @"mainWaitContinuityVerified":@NO,
+            @"workerTiming":@"begin precedes metadata query; registers/FP captured later after ranking; end includes both phases; not atomic",
+            @"mainBusyStampChangedDuringCapture":@(s.mainBusyStampChangedDuringCapture),
+            @"mainBusyStampAtBegin":@(s.mainBusyAtBegin), @"mainBusyStampAtEnd":@(s.mainBusyAtEnd),
+            @"processThreadCount":@(s.totalThreads), @"scanStartIndex":@(s.scanStart), @"scannedThreads":@(s.scanned),
+            @"scanTruncated":@(s.scanTruncated), @"eligibleThreads":@(s.eligible),
+            @"candidateCount":@(s.candidateCount), @"registerCaptureAttempts":@(s.captured),
+            @"candidatesTruncated":@(s.candidatesTruncated), @"workers":workers,
+            @"excludedMain":@(s.excludedMain), @"excludedCollector":@(s.excludedCollector),
+            @"identifierFailures":@(s.identifierFailures), @"basicFailures":@(s.basicFailures),
+            @"extendedFailures":@(s.extendedFailures), @"error":@(s.error), @"machError":@(s.machError),
+            @"portsReleased":@(s.portsReleased), @"portReleaseFailures":@(s.portReleaseFailures),
+            @"firstPortReleaseError":@(s.firstPortReleaseError),
+            @"arrayReleaseError":@(s.arrayReleaseError), @"collectorReleaseError":@(s.collectorReleaseError)}];
     }
     return out;
 }
@@ -326,10 +609,11 @@ static NSMutableDictionary *Report(NSString *status, bool full) {
 #endif
     uint64_t end = gTicket.load(std::memory_order_relaxed);
     uint64_t requested = end >= gStartTicket ? end - gStartTicket : 0;
-    return [@{@"schema":@1, @"build":@"0.1.0~test8+diag1", @"requestID":gRequestID ?: @"",
+    return [@{@"schema":@2, @"build":@"0.1.0~test8+diag2", @"requestID":gRequestID ?: @"",
         @"status":status, @"startedAtUnix":@(gStartUnix), @"endedAtUnix":@(gEndUnix),
         @"duration":@(gStart ? NS(now - gStart) / (double)kSecond : 0),
         @"events":full ? EventsJSON() : @[], @"samples":full ? SamplesJSON() : @[],
+        @"workerSnapshots":full ? WorkerSnapshotsJSON() : @[],
         @"images":gImageReport ?: @[], @"pid":@(getpid()), @"arch":arch,
         @"clock":@{@"name":@"mach_continuous_time", @"numer":@(gTimebase.numer), @"denom":@(gTimebase.denom)},
         @"queueDelayNs":@(gAckReported ? gQueueDelay : (gStart ? NS(now - gStart) : 0)),
@@ -340,6 +624,14 @@ static NSMutableDictionary *Report(NSString *status, bool full) {
         @"limits":@{@"seconds":@90, @"timerMs":@50, @"busyThresholdMs":@250, @"sampleSpacingMs":@250,
             @"maxTimerGapMs":@300, @"eventCapacity":@(kEvents), @"sampleCapacity":@(kSamples),
             @"perBusySamples":@6, @"maxFPFrames":@(kFrames), @"maxFPSpanBytes":@(kSpan),
+            @"maxWorkerSnapshots":@(kWorkerSnapshots), @"workerSnapshotsAttempted":@(gWorkerSnapshotCount),
+            @"workerSnapshotQuotaRemaining":@(kWorkerSnapshots - gWorkerSnapshotCount),
+            @"workerTriggerBusyMs":@500, @"workerTriggerConsecutiveWaitingMainSamples":@2,
+            @"workerAttemptsPerBusy":@1, @"maxWorkerThreadsScanned":@(kWorkerScan),
+            @"maxWorkerCandidates":@(kWorkers), @"maxWorkerFPFrames":@(kWorkerFrames),
+            @"maxWorkerFPBytesRead":@(kWorkers * kWorkerFrames * 16),
+            @"workerSoftBudgetNs":@(kWorkerBudgetNS), @"workerBudgetIsHardRealtimeBound":@NO,
+            @"maxExecutableRangesPerImage":@4,
             @"maxFPBytesReadPerSample":@(kFrames * 16), @"maxJSONBytesExclusive":@(kMaxJSON),
             @"maxImages":@(kImages), @"imagesObserved":@(gImageTotal),
             @"imageHeadersChecked":@(gImageHeadersChecked), @"maxImageHeadersChecked":@4096,
@@ -352,17 +644,26 @@ static NSMutableDictionary *Report(NSString *status, bool full) {
     } mutableCopy];
 }
 static NSString *Encode(NSMutableDictionary *report) {
-    // Finite bounds before serialization; retry removes oldest evidence only.
-    for (unsigned attempt = 0; attempt < 4; ++attempt) {
+    // Keep the schema2 array present, and never leave a legacy private worker payload.
+    [report removeObjectForKey:@"workerThreads"];
+    if (!report[@"workerSnapshots"]) report[@"workerSnapshots"] = @[];
+    // Retry order: events, worker snapshots, images, main samples. Five encodings.
+    for (unsigned attempt = 0; attempt < 5; ++attempt) {
         NSError *error = nil;
         NSData *data = [NSJSONSerialization dataWithJSONObject:report options:0 error:&error];
         if (data && data.length < kMaxJSON)
             return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
         report[@"serializationError"] = @(data ? 1 : 2);
         report[@"truncated"] = @YES;
-        if (attempt == 0) report[@"events"] = @[];
-        else if (attempt == 1) report[@"images"] = @[];
-        else report[@"samples"] = @[];
+        if (attempt == 0) { report[@"events"] = @[]; report[@"eventsDiscarded"] = @YES; }
+        else if (attempt == 1) {
+            report[@"workerSnapshots"] = @[]; report[@"workerSnapshotsDiscarded"] = @YES;
+            [report removeObjectForKey:@"workerThreads"];
+        } else if (attempt == 2) {
+            report[@"images"] = @[]; report[@"imagesDiscarded"] = @YES;
+            NSMutableDictionary *limits = [report[@"limits"] mutableCopy];
+            limits[@"ownImageUUIDIncluded"] = @NO; report[@"limits"] = limits;
+        } else if (attempt == 3) { report[@"samples"] = @[]; report[@"samplesDiscarded"] = @YES; }
     }
     return nil;
 }
@@ -448,6 +749,7 @@ static void Tick() {
     // Failed Mach queries are evidence, never a same-busy retry storm.
     if (gSamples[gSampleCount - 1].error == 1 || gSamples[gSampleCount - 1].error == 2)
         gSuppressedBusy = busy;
+    MaybeCaptureWorkers(); // never alters/suppresses the just-recorded main sample
 }
 static void Start(NSString *requestID) {
     gEpoch = ++gEpochCounter;
@@ -456,6 +758,8 @@ static void Start(NSString *requestID) {
     gStartUnix = [NSDate timeIntervalSinceReferenceDate] + NSTimeIntervalSince1970;
     gEndUnix = 0; gLastSample = 0; gBusySampled = 0; gSuppressedBusy = 0;
     gSampleCount = 0; gPerBusy = 0; gAckReported = false; gQueueDelay = 0;
+    gWorkerSnapshotCount = 0; gWorkerScanCursor = 0; gWorkerAttemptedBusy = 0;
+    std::memset(gWorkerSnapshots, 0, sizeof(gWorkerSnapshots));
     gImageReport = nil; gImageTotal = 0; gImageHeadersChecked = 0; gOwnImageIncluded = false;
     std::memset(gSkip, 0, sizeof(gSkip));
     gStartTicket = gTicket.load(std::memory_order_acquire);
@@ -538,6 +842,9 @@ static void Command() {
         gStart = 0; gStartUnix = 0; gEndUnix = now; gSampleCount = 0;
         gAckReported = false; gQueueDelay = 0; std::memset(gSkip, 0, sizeof(gSkip));
         std::memset(gSamples, 0, sizeof(gSamples));
+        gWorkerSnapshotCount = 0; gWorkerScanCursor = 0; gWorkerAttemptedBusy = 0;
+        std::memset(gWorkerSnapshots, 0, sizeof(gWorkerSnapshots));
+        gImageHeadersChecked = 0; gOwnImageIncluded = false;
         gEpoch = 0; gStartTicket = gTicket.load(std::memory_order_relaxed);
         gDroppedStart = gDropped.load(std::memory_order_relaxed);
         Publish(Report(@"cleared", false));
