@@ -1,5 +1,4 @@
 #import "LPSBEnvironment.h"
-#import "LPSBWakeDiagnostics.h"
 #import <objc/message.h>
 #import <notify.h>
 #import <CoreFoundation/CoreFoundation.h>
@@ -42,7 +41,6 @@ static void LPInstallOriginalPolicyInputs(void) {
         uint32_t status = notify_register_dispatch([(__bridge NSString *)*notification UTF8String], &gKeychainToken,
                                                   dispatch_get_main_queue(), ^(int token) {
             (void)token;
-            LPSBWakeDiagnosticMark(LPWakeStageKeybagCallback, 0, 0);
             LPRefreshKeychainLockState();
             [LPSBOverlayHost refreshVisibility];
         });
@@ -189,16 +187,13 @@ static BOOL LPRegisterOverlayWindow(LPSBPassThroughWindow *window) {
     invocation.selector = registerSelector;
     [invocation setArgument:&contextID atIndex:2];
     [invocation setArgument:&level atIndex:3];
-    LPSBWakeDiagnosticMark(LPWakeStageWindowRegisterBegin, contextID, 0);
     [invocation invoke];
-    LPSBWakeDiagnosticMark(LPWakeStageWindowRegisterEnd, contextID, 0);
     gWindowHostingController = host;
     gWindowContextID = contextID;
     return YES;
 }
 
 static void LPUnregisterOverlayWindow(void) {
-    LPSBWakeDiagnosticMark(LPWakeStageWindowUnregister, gWindowContextID, 0);
     gWindow.hidden = YES;
     SEL selector = NSSelectorFromString(@"unregisterWindowWithContextID:");
     if (gWindowHostingController && gWindowContextID &&
@@ -227,13 +222,11 @@ static void LPUnregisterOverlayWindow(void) {
     notify_register_dispatch("com.apple.springboard.hasBlankedScreen", &gBlankToken, dispatch_get_main_queue(), ^(int token) {
         uint64_t state = 1;
         gBlanked = notify_get_state(token, &state) == NOTIFY_STATUS_OK ? (state != 0) : YES;
-        LPSBWakeDiagnosticMark(LPWakeStageBlankCallback, gBlanked, 0);
         [self refreshVisibility];
     });
     notify_register_dispatch("com.apple.springboard.lockstate", &gLockToken, dispatch_get_main_queue(), ^(int token) {
         (void)token;
         // refreshVisibility re-queries the live lock manager before any show.
-        LPSBWakeDiagnosticMark(LPWakeStageLockCallback, 0, 0);
         [self refreshVisibility];
     });
     uint64_t blankState = 1;
@@ -255,7 +248,6 @@ static void LPUnregisterOverlayWindow(void) {
 }
 + (void)sceneChanged:(NSNotification *)note {
     if (!NSThread.isMainThread) { dispatch_async(dispatch_get_main_queue(), ^{ [self sceneChanged:note]; }); return; }
-    LPSBWakeDiagnosticMark(LPWakeStageSceneChanged, (uint64_t)(__bridge void *)note.object, 0);
     if ([note.name isEqualToString:UISceneDidDisconnectNotification]) {
         gDisconnectedScene = note.object;
         if (note.object == gWindow.windowScene) LPUnregisterOverlayWindow();
@@ -304,7 +296,6 @@ static void LPUnregisterOverlayWindow(void) {
     [self installObservers];
     if (gRefreshingVisibility || gStartingWindow) return;
     gRefreshingVisibility = YES;
-    LPSBWakeDiagnosticMark(LPWakeStageRefreshBegin, gWindowContextID, gBlanked);
     @try {
     Class plugin = NSClassFromString(@"LPSBPlugin");
     SEL refreshSelector = NSSelectorFromString(@"refresh");
@@ -322,9 +313,7 @@ static void LPUnregisterOverlayWindow(void) {
     if (!scene) return;
     if (!gWindow) {
         SEL makeSelector = NSSelectorFromString(@"makeRootViewController");
-        LPSBWakeDiagnosticMark(LPWakeStageRootCreateBegin, 0, 0);
         UIViewController *root = [plugin respondsToSelector:makeSelector] ? ((id (*)(id, SEL))objc_msgSend)(plugin, makeSelector) : nil;
-        LPSBWakeDiagnosticMark(LPWakeStageRootCreateEnd, root != nil, 0);
         if (root) [self startWithRootViewController:root];
     }
     if (!gWindow) return;
@@ -339,9 +328,6 @@ static void LPUnregisterOverlayWindow(void) {
     BOOL visible = ((BOOL (*)(id, SEL))objc_msgSend)(plugin, visibleSelector);
     if (gWindow.rootViewController.view.hidden != !visible) gWindow.rootViewController.view.hidden = !visible;
     } @finally {
-        uint64_t diagnosticFlags = (gBlanked ? 1u : 0u) | (gLocked ? 2u : 0u) | (gLockKnown ? 4u : 0u);
-        LPSBWakeDiagnosticWindow(gWindowContextID, (uint64_t)(__bridge void *)gWindow.windowScene, diagnosticFlags);
-        LPSBWakeDiagnosticMark(LPWakeStageRefreshEnd, gWindowContextID, diagnosticFlags);
         gRefreshingVisibility = NO;
     }
 }
@@ -359,7 +345,6 @@ static void LPSBBootstrap(NSUInteger attemptsRemaining) {
 
 __attribute__((constructor)) static void LPSBConstructor(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
-        LPSBWakeDiagnosticsInstall();
         LPSBBootstrap(30); // Bounded launch retries; later events can also recreate the window.
     });
 }

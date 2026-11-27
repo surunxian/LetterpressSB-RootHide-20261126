@@ -2,7 +2,7 @@
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
   "baseline_test4": "3f57e86a5381b9a9edccf389a23527ed56c5f640",
-  "status": "test8+isolate6 one-entry Timeline schedule isolation from full diag2/default60; not a proven wake fix",
+  "status": "test9 candidate: CADisplayLink restores recurring original particles; wake diagnostics completely removed; not device-tested",
   "files": [
     {
       "path": ".github/workflows/apple-build.yml",
@@ -15,9 +15,9 @@
       "sha256": "4ca12294339c5b1719e34fb3179fc535b13a88bbc6c2e00f98ce705dc1d0408b"
     },
     {
-      "path": "Port/Build/adapt_vortex_timeline_isolation.py",
-      "bytes": 3913,
-      "sha256": "c1df9154fba8e1e02adcc9c291e38fc5f2c51b656318c9396bbcd066f8bab578"
+      "path": "Port/Build/adapt_vortex_displaylink.py",
+      "bytes": 14072,
+      "sha256": "2285c734103d3774a02b56816db2c6451cadc52762198ef9a186d900974e1008"
     },
     {
       "path": "Port/Build/build_macos.sh",
@@ -41,8 +41,8 @@
     },
     {
       "path": "Port/Build/prepare_apple_vortex.py",
-      "bytes": 5163,
-      "sha256": "c6104307367af2f013baf5af25897b9476f3ff357fbd66d587bdcecc151f893d"
+      "bytes": 5155,
+      "sha256": "e7fc9615a39fff292ae21b95d08b8fec22c05ec411032eb542cb6b6d9bfb5d73"
     },
     {
       "path": "Port/Build/verify.py",
@@ -61,8 +61,8 @@
     },
     {
       "path": "Port/Preferences/Resources/Root.plist",
-      "bytes": 23288,
-      "sha256": "3ebc32b8da666749f9ea22b211b55523598be8cd1654bfa59f7aad8ea242cefd"
+      "bytes": 22610,
+      "sha256": "1338db031483e0a882a72d4e7980de0b76346d07f870ed18312e543011df8fa7"
     },
     {
       "path": "Port/Preferences/Resources/icon.png",
@@ -93,11 +93,6 @@
       "path": "Port/Preferences/Sources/LPSBRootListController.m",
       "bytes": 5300,
       "sha256": "fc2c98e3bcb8818043f5c40353f8fd8e6e881ac4a910ceef6d3b56f691b40f7a"
-    },
-    {
-      "path": "Port/Preferences/Sources/LPSBWakeDiagnosticsController.m",
-      "bytes": 27489,
-      "sha256": "6c81b7b5b1dc01a8d501552dc4ac18add6542e9a4966a9617ec79c6b6b3c6f92"
     },
     {
       "path": "Port/Resources/ChillBitmapSE_7px.ttf",
@@ -216,8 +211,8 @@
     },
     {
       "path": "Port/Sources/LPSBOverlayHost.mm",
-      "bytes": 18241,
-      "sha256": "45e7a8bda48283c5b7d2555e2913e100061ae4b6035c1a296507a3510f519565"
+      "bytes": 17116,
+      "sha256": "10b4a6ede954edbf8e4d246e5740ee9f0f49644fb6ea35f585a2d6f917047e03"
     },
     {
       "path": "Port/Sources/LPSBPreferenceMigration.m",
@@ -228,16 +223,6 @@
       "path": "Port/Sources/LPSBRootViewController.swift",
       "bytes": 2739,
       "sha256": "3586002cd1910f651e9e9419681564d0e360160e604cbf2ee6a15b002d5c0673"
-    },
-    {
-      "path": "Port/Sources/LPSBWakeDiagnostics.h",
-      "bytes": 4005,
-      "sha256": "7f90a1565b1e31442163410f927ecb0120966ead6c483ccc5a6b59ceef6319bc"
-    },
-    {
-      "path": "Port/Sources/LPSBWakeDiagnostics.mm",
-      "bytes": 52895,
-      "sha256": "b6a347d3df1ff0c3afa4c7ec217bea9138c478000b58644be9b76d25d6166250"
     },
     {
       "path": "Port/Sources/LetterpressPreferences.swift",
@@ -321,8 +306,8 @@
     },
     {
       "path": "Port/control",
-      "bytes": 453,
-      "sha256": "046affe34906f094d2b17f2c3a226906cda12b155bc6d35f8dd228b324827bfa"
+      "bytes": 444,
+      "sha256": "3e6552162193e453753be27c4755d44f0fba5192cad52fd071b5ef6696f908a9"
     },
     {
       "path": "Port/project.yml",
@@ -331,8 +316,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 1389,
-      "sha256": "3dac4bcf61438efb4fa150edaa27b514b180b56b0230e854dde27a8e920d145c"
+      "bytes": 1581,
+      "sha256": "ce450f5cc84f7a07476260f8071fcd9564f7181cdc4625e4303ec28d8a52b41e"
     },
     {
       "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",
@@ -348,30 +333,13 @@
   "baseline_test5": "0e287074fd9d6f928ed702344ba91743d58fdaf9",
   "baseline_test6": "0ba7b2f3c01f8cac29f0ec5080e1f88bf2c247c3",
   "baseline_test7": "c74be8f033bfecedc6e707cd14b8eb4c7b35a71c",
-  "limits": {
-    "capture_seconds": 90,
-    "main_samples": 24,
-    "samples_per_busy": 6,
-    "main_FP_frames": 48,
-    "sample_spacing_ms": 250,
-    "busy_threshold_ms": 250,
-    "worker_trigger_ms": 500,
-    "worker_snapshots": 4,
-    "worker_scan_per_snapshot": 96,
-    "worker_selected_per_snapshot": 24,
-    "worker_FP_frames": 24,
-    "worker_soft_budget_ms": 20,
-    "events": 2048,
-    "images": 192,
-    "image_headers": 4096,
-    "executable_ranges_per_image": 4,
-    "JSON_bytes_exclusive": 1048576,
-    "non_atomic": true,
-    "no_wait_owner_or_GPU_state": true
-  },
-  "baseline_test8": "0b3d762c82fa92aee998523df75e1134567a83f5",
-  "baseline_diagnostic1": "fc9bcf24e990bc063696d5c561657373a8a397c5",
-  "baseline_diagnostic2": "62d3abcb64f7297121df8b8980ed0921a63827e4",
-  "controlled_change": "Replace only VortexView animation TimelineSchedule with a stable one-entry explicit schedule. Retain TimelineView, Canvas, update, symbols, Reader, draw and default60; other paths frozen.",
-  "test_requirement": "Same track/settings, confirm real auxiliary lyrics, then two lock5-10s/wake cycles. Particles may be absent/static. No repeated diagnostic JSON requested. Source retention is not device cadence proof."
+  "limits": [
+    "Settings UIKit/Preferences is not the original SwiftUI App shell; no standalone preview or TIPA updater",
+    "Asynchronous media bridge and fail-closed lock/blank policy remain host adaptations",
+    "App-list alphabetical index/search highlighting not yet restored; original AltList visible classification not proven equivalent",
+    "Physical wake latency, screenshot privacy, rotation geometry and device behavior not verified"
+  ],
+  "baseline_test8": "frozen non-diagnostic 65-file test8",
+  "controlled_change": "Replace only VortexView recurring driver with CADisplayLink on complete test8; remove all added wake diagnostics by using the frozen pre-diagnostic baseline.",
+  "test_requirement": "Same track/settings; confirm real lyrics and animated particles; two lock5-10s/wake cycles; no repeated JSON requested; not strict single-factor due to diagnostic removal."
 }
