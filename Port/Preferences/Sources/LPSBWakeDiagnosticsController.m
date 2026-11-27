@@ -6,7 +6,7 @@
 #import <math.h>
 
 static NSString *const LPWakeDomain = @"com.82flex.letterpress.diagnostics";
-static NSString *const LPWakeBuild = @"0.1.0~test8+isolate2";
+static NSString *const LPWakeBuild = @"0.1.0~test8+isolate3";
 static const NSUInteger LPWakeReportLimit = 1024 * 1024;
 static const char *const LPWakeCommandNotification = "com.82flex.letterpress.diagnostics.command";
 
@@ -88,7 +88,7 @@ static NSDictionary *LPWakeReadReport(id raw, NSData **dataOut, NSString **probl
     NSDictionary *report = parsed;
     if (!LPWakeNumber(report[@"schema"]) || [report[@"schema"] doubleValue] != 2 ||
         ![report[@"build"] isKindOfClass:NSString.class] || ![report[@"build"] isEqualToString:LPWakeBuild]) {
-        *problem = @"这是旧版或不兼容的诊断报告（需要 schema 2 / 0.1.0~test8+isolate2），不能作为本次结果。"; return nil;
+        *problem = @"这是旧版或不兼容的诊断报告（需要 schema 2 / 0.1.0~test8+isolate3），不能作为本次结果。"; return nil;
     }
     NSString *status = report[@"status"];
     if (![status isKindOfClass:NSString.class] ||

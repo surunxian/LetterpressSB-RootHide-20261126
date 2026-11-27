@@ -2,7 +2,7 @@
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
   "baseline_test4": "3f57e86a5381b9a9edccf389a23527ed56c5f640",
-  "status": "test8+isolate2 original auxiliary-label content; no mounted Vortex particle view; not a proven fix; target-device validation pending",
+  "status": "test8+isolate3 full original particle branch; Vortex targetFrameRate 30fps single-variable device comparison; not a proven fix",
   "files": [
     {
       "path": ".github/workflows/apple-build.yml",
@@ -92,7 +92,7 @@
     {
       "path": "Port/Preferences/Sources/LPSBWakeDiagnosticsController.m",
       "bytes": 27489,
-      "sha256": "5032843e35ab13db8eed8c5c271ea8dd6f1239ae8c0521b696671fbd09015281"
+      "sha256": "65cccff6a05cbb404b89d47c2feb144aabc40dd54ec5c8a9e7289914c90882b9"
     },
     {
       "path": "Port/Resources/ChillBitmapSE_7px.ttf",
@@ -181,8 +181,8 @@
     },
     {
       "path": "Port/Sources/HudFirefliesView.swift",
-      "bytes": 6447,
-      "sha256": "9b9fa5f7e9e32eb38974a37b8f9cc9cc8c51027db323b3b9a623b166f52232e1"
+      "bytes": 7032,
+      "sha256": "bd684bb68b2e84d5e5f67ac332cb09be023e650823bd3d53751c0184c39a7076"
     },
     {
       "path": "Port/Sources/HudViewController.swift",
@@ -227,12 +227,12 @@
     {
       "path": "Port/Sources/LPSBWakeDiagnostics.h",
       "bytes": 4005,
-      "sha256": "ca37599536a93aaddaa54123aa9eb0522a47a2c85663c30f5931e73283b9a45e"
+      "sha256": "1cf458f55e7b89f09c87e7671a8a6a472595c6c4e958543a183366e21cd67f76"
     },
     {
       "path": "Port/Sources/LPSBWakeDiagnostics.mm",
       "bytes": 52895,
-      "sha256": "c883720a59eb8738d44dedcf513ae8e0440ee5650e21e2b8f1708d2999436930"
+      "sha256": "44d510a1ea6d02651a1ee3f56001e291fa9a53d18da0230c903e988a54b1c0be"
     },
     {
       "path": "Port/Sources/LetterpressPreferences.swift",
@@ -317,7 +317,7 @@
     {
       "path": "Port/control",
       "bytes": 453,
-      "sha256": "a3bb54013e7f252f1eabd60ca714333ff07d5b439dbdb93be3393495c89f3855"
+      "sha256": "8da9e3bec8ccad1ef9ed41dd9632f4f0e13fabaac7a8beef361e283304e3338a"
     },
     {
       "path": "Port/project.yml",
@@ -326,8 +326,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 9773,
-      "sha256": "f22f15894d0b9e8ad1c4058b95eda25cb318b069df948f312bc07b54896c85a7"
+      "bytes": 7596,
+      "sha256": "1742702c462e873c47c89cd5afc486ca6bae233f0475e6400e207d2cb56dc402"
     },
     {
       "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",
@@ -366,8 +366,7 @@
   },
   "baseline_test8": "0b3d762c82fa92aee998523df75e1134567a83f5",
   "baseline_diagnostic1": "fc9bcf24e990bc063696d5c561657373a8a397c5",
-  "baseline_diagnostic2": "62d3abcb64f7297121df8b8980ed0921a63827e4",
-  "controlled_change": "Restore original hosted HudContentView and text/container; remove only VortexViewReader particle mount; VortexSystem state init, VM/media/secure-window/SBS/user settings unchanged",
-  "baseline_isolation1": "0da9aa5d75d11c29ef6cf7467ba51da11b501595",
-  "test_requirement": "Enable existing isLabelEnabled auxiliary-label switch and confirm real text before capture; do not change persisted defaults automatically"
+  "baseline_test8_diag2_commit": "62d3abcb64f7297121df8b8980ed0921a63827e4",
+  "controlled_change": "Only change VortexView targetFrameRate from its default 60 to 30 in the original particle branch; diagnostic build identifiers bumped for report compatibility; all other source files frozen.",
+  "test_requirement": "Compare with the same playing track and two lock/wake cycles; report visible lyrics, particle smoothness, and whole-screen wake delay. Existing isolate2 requires no new report unless delay recurs."
 }
