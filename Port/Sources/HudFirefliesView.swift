@@ -139,7 +139,7 @@ struct HudFirefliesView: View {
     }
 
     var particleBody: some View {
-        VortexView(system, targetFrameRate: 30) {
+        VortexView(system) {
             ForEach(0..<HudViewModel.characterCount, id: \.self) { index in
                 if let char = component(vm.shuffledComponents, at: index) {
                     textParticle(char, index: index)
