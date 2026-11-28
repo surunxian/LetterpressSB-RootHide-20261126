@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Single-file, reversible CADisplayLink adaptation of pinned Vortex Sources.
+"""Single-file, reversible no-Canvas isolation with test9's CADisplayLink clock.
 
 Call adapt_displaylink(local, original_swift_sha256) on an isolated copy only.
-No build, network, host lifecycle edits, diagnostics, or command-line side effects.
+The clock publishes Date and a tiny SwiftUI marker consumes it; particles and
+Canvas are temporarily absent from the body. No equivalent workload or frame
+submission is claimed. No build, network, host lifecycle edits or diagnostics.
 The exact original inventory is embedded, not trusted from the caller.
 """
 from pathlib import Path
@@ -40,13 +42,33 @@ PINNED_SWIFT_SHA256 = {
     'Sources/Vortex/Views/VortexViewReader.swift': '6910bae0ba1d59d80ed8cad33cc201cf47e6cb8435b797b31271b47d1721f76f',
 }
 
-# Exact byte anchors: no regex, AST rewriting, whitespace normalization, or fallback.
+# Exact byte anchors: replace the entire Canvas branch, not layered noDraw/noUpdate edits.
+CANVAS = b'''            Canvas { context, size in
+                particleSystem.update(date: timeline.date, drawSize: size)
+                draw(particleSystem, into: context, at: size)
+            } symbols: {
+                symbols
+            }
+'''
+MARKER = b'''            GeometryReader { _ in
+                let seconds = clockDate.timeIntervalSinceReferenceDate
+                let fraction = seconds - seconds.rounded(.down)
+                Rectangle()
+                    .fill(Color.white)
+                    .frame(width: 4, height: 4)
+                    .opacity(0.35 + 0.65 * fraction)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+'''
+TEST9_HELPERS_SHA256 = '9abd68f0416eddf95508799729a3b15af1441efde32a7a31684db6927dcc72e3'
+
 EDITS = (
     (b'import SwiftUI\n', b'import SwiftUI\nimport UIKit\nimport QuartzCore\n'),
     (b'TimelineView(.animation(minimumInterval: 1 / Double(targetFrameRate))) { timeline in',
      b'_VortexDisplayLinkView(targetFrameRate: targetFrameRate) { clockDate in'),
-    (b'particleSystem.update(date: timeline.date, drawSize: size)',
-     b'particleSystem.update(date: clockDate, drawSize: size)'),
+    (CANVAS, MARKER),
 )
 
 HELPERS = b'''
@@ -166,17 +188,14 @@ def _structure(original: bytes, adapted: bytes) -> dict:
     # Entire original draw function, including its existing symbol-miss print,
     # must survive exactly; no new logging is introduced by the driver.
     draw_anchor = b'    /// Draws one particle system inside the canvas.\n'
-    canvas_old = b'''            Canvas { context, size in
-                particleSystem.update(date: timeline.date, drawSize: size)
-                draw(particleSystem, into: context, at: size)
-            } symbols: {
-                symbols
-            }
-'''
-    canvas_new = canvas_old.replace(EDITS[2][0], EDITS[2][1])
     if original.count(draw_anchor) != 1:
         raise ValueError('Unexpected original draw boundary')
     main = adapted[:-len(HELPERS)]
+    body_start = b'    public var body: some View {\n'
+    body_end = b'    /// Creates a new VortexView from a pre-configured particle system'
+    if any(data.count(anchor) != 1 for data in (original, main) for anchor in (body_start, body_end)):
+        raise ValueError('Unexpected original/adapted body boundary')
+    body = main[main.index(body_start):main.index(body_end)]
     kept_tokens = (
         b'@State private var particleSystem: VortexSystem',
         b'public var targetFrameRate: Int', b'targetFrameRate: Int = 60',
@@ -187,7 +206,22 @@ def _structure(original: bytes, adapted: bytes) -> dict:
     checks = {
         'no_timeline_view_or_schedule': all(t not in adapted for t in
             (b'TimelineView', b'.animation', b'.explicit')),
-        'canvas_update_draw_symbols_retained': original.count(canvas_old) == 1 and main.count(canvas_new) == 1,
+        'whole_canvas_branch_replaced_once': original.count(CANVAS) == 1 and body.count(MARKER) == 1,
+        'no_canvas_update_draw_or_symbols_in_body': all(t not in body for t in
+            (b'Canvas', b'particleSystem.update(', b'draw(', b'symbols')),
+        'marker_consumes_clock_date': all(body.count(t) == 1 for t in
+            (b'{ clockDate in', b'let seconds = clockDate.timeIntervalSinceReferenceDate',
+             b'let fraction = seconds - seconds.rounded(.down)', b'.opacity(0.35 + 0.65 * fraction)')),
+        'marker_is_flexible_top_leading_white_4x4_noninteractive_accessibility_hidden': all(body.count(t) == 1 for t in
+            (b'GeometryReader { _ in', b'Rectangle()', b'.fill(Color.white)',
+             b'.frame(width: 4, height: 4)',
+             b'.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)',
+             b'.allowsHitTesting(false)', b'.accessibilityHidden(true)')),
+        'symbols_storage_and_initializer_retained': all(main.count(t) == original.count(t) == 1 for t in
+            (b'@ViewBuilder var symbols: Symbols', b'@ViewBuilder symbols: () -> Symbols = {', b'self.symbols = symbols()')),
+        'no_text_or_added_marker_diagnostics': all(t not in MARKER for t in
+            (b'Text(', b'print(', b'Logger', b'os_log', b'Timer', b'Task', b'DispatchQueue')),
+        'test9_helpers_byte_identical': digest(HELPERS) == TEST9_HELPERS_SHA256,
         'draw_algorithm_byte_identical': main[main.index(draw_anchor):] == original[original.index(draw_anchor):],
         'parameters_default60_system_preference_retained': all(main.count(t) == original.count(t) == 1 for t in kept_tokens),
         'helpers_exact_private_suffix': adapted.endswith(HELPERS) and adapted.count(HELPERS) == 1,
@@ -257,7 +291,28 @@ def adapt_displaylink(local: Path, original_swift_sha256: dict) -> dict:
         'restored_view_sha256': digest(restore_displaylink(after[VIEW])),
         'reverse_restores_upstream': True,
         'structure_checks': checks,
-        'simulation_changed': False,
+        'simulation_changed': True,
+        'simulation_algorithm_changed': False,
+        'canvas_isolation': {
+            'enabled': True,
+            'no_canvas': True,
+            'update_invocations_in_body': 0,
+            'draw_invocations_in_body': 0,
+            'particles_enabled': False,
+            'symbols_rendered': False,
+            'symbols_storage_and_initialization_retained': True,
+            'draw_function_byte_identical': checks['draw_algorithm_byte_identical'],
+            'marker_consumes_date': checks['marker_consumes_clock_date'],
+            'marker': '4x4 white rectangle, top-leading; opacity = 0.35 + 0.65 * fractional reference seconds',
+            'marker_noninteractive': True,
+            'marker_accessibility_hidden': True,
+            'clock_helpers_unchanged_from_test9': checks['test9_helpers_byte_identical'],
+            'clock_helpers_sha256': digest(HELPERS),
+            'clock_publishes_date_on_callback': True,
+            'mounted_lifecycle_required': True,
+            'equal_render_workload_claimed': False,
+            'per_callback_frame_submission_claimed': False,
+        },
         'host_lifecycle_changed': False,
         'new_diagnostics_or_logging': False,
         'swift_language_mode_requested': '5',

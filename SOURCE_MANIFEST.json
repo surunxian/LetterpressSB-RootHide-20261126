@@ -2,7 +2,7 @@
   "upstream": "owngoal-dev/Letterpress",
   "commit": "121b49873a4d6ff2a0cf87eb3ce6b643033fb0b8",
   "baseline_test4": "3f57e86a5381b9a9edccf389a23527ed56c5f640",
-  "status": "test9 candidate: CADisplayLink restores recurring original particles; wake diagnostics completely removed; not device-tested",
+  "status": "test10 noCanvas temporary diagnostic control; test9 CADisplayLink helpers retained byte-identically; particles not rendered; no device test",
   "files": [
     {
       "path": ".github/workflows/apple-build.yml",
@@ -16,8 +16,8 @@
     },
     {
       "path": "Port/Build/adapt_vortex_displaylink.py",
-      "bytes": 14072,
-      "sha256": "2285c734103d3774a02b56816db2c6451cadc52762198ef9a186d900974e1008"
+      "bytes": 17456,
+      "sha256": "7ce1245bfeb38bcfbb6bfa69c6ea3f2436b897186b4151eb9c4563f5901854ca"
     },
     {
       "path": "Port/Build/build_macos.sh",
@@ -306,8 +306,8 @@
     },
     {
       "path": "Port/control",
-      "bytes": 444,
-      "sha256": "3e6552162193e453753be27c4755d44f0fba5192cad52fd071b5ef6696f908a9"
+      "bytes": 445,
+      "sha256": "4f471df29da4004c901cd01788b0d667635883285df9430e39d43d0d8dcd8225"
     },
     {
       "path": "Port/project.yml",
@@ -316,8 +316,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 1581,
-      "sha256": "ce450f5cc84f7a07476260f8071fcd9564f7181cdc4625e4303ec28d8a52b41e"
+      "bytes": 1921,
+      "sha256": "f450230048ddaabb4ffa0ada96fda4325ce87344c2aa943b1e4a06e62ad64d3d"
     },
     {
       "path": "THIRD_PARTY_LICENSES/DominantColors-a05327d36092c47e9ddc77ce565eb35a5b4a4a6e.txt",
@@ -340,6 +340,7 @@
     "Physical wake latency, screenshot privacy, rotation geometry and device behavior not verified"
   ],
   "baseline_test8": "frozen non-diagnostic 65-file test8",
-  "controlled_change": "Replace only VortexView recurring driver with CADisplayLink on complete test8; remove all added wake diagnostics by using the frozen pre-diagnostic baseline.",
-  "test_requirement": "Same track/settings; confirm real lyrics and animated particles; two lock5-10s/wake cycles; no repeated JSON requested; not strict single-factor due to diagnostic removal."
+  "controlled_change": "Replace the VortexView Canvas particle rendering branch with a clock-driven tiny SwiftUI marker; retain CADisplayLink clock byte-identically. No Canvas/update/draw/symbol rendering in body.",
+  "test_requirement": "Keep same song/settings; verify lyrics and marker, then two 5-10 second lock/wake cycles; particles intentionally absent; no repeated diagnostic JSON requested; not a confirmed fix.",
+  "baseline_test9": "frozen 66-file completed test9 source inventory"
 }
